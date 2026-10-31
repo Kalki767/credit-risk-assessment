@@ -36,3 +36,10 @@
 - home_ownership: MORTGAGE / RENT / OWN only (no rare levels)
 - application_type: 16 Joint App rows. Flag or merge; income may be joint
 - Main categories clean → planted issues likely in emp_title, title, zip/state, holdout, cross-file
+
+### A1.1 checks passed
+- No duplicates in credit_bureau, loan_servicing or holdout
+- applications, credit_bureau and loan_servicing cover exactly the same 30,000 ids
+- No holdout ids appear in the training files
+
+300 rows: earliest_cr_line after issue_d
