@@ -63,3 +63,47 @@
 - Ranking preserved (raw and log deciles identical).
 - Capped loans stay separable at the cap. Big-balance borrowers default less (4–7% vs 11–14%).
 - Drift: 2015–16 has 106 / 111 loans above the 2014 caps for revol_bal / total_rev_hi_lim vs ~78 expected. Also 4 later dti > 40.95 (joint applications) and 2 bc_util > 150. Check with PSI in A7.
+
+## A4: Reliability, missingness, leakage and features (fit sample: loans issued ≤ 2014)
+
+### Missingness
+- No missing group differs from noise in default rate, so treatments follow the reason for the gap.
+- mths_since_last_delinq (46%): structural (never delinquent), handled with the `ever_delinq` flag and NaN kept. Never-delinquent borrowers default only 1 pt less.
+- emp_title / emp_length: 685 of 686 missing emp_length also lack emp_title. Becomes an "Unknown" category (A5).
+- bc_util (1.1%): likely no bankcard (unverifiable; rate stable across years at 1.05% vs 1.09%). Flag + median fill (69.4).
+- revol_util (4): recomputed as balance / limit; 0 where balance = limit = 0.
+- earliest_cr_dt (300 impossible dates): borrowers match normal ones (total_acc 24 vs 24; 54% have a past delinquency), so only the date is wrong.
+  - Imputed as credit_hist_months using the median by total_acc quintile (139–210 months).
+  - 5 groups chosen by validation on 2015: MAE 68.7 (global median) → 65.7 (5 groups) → 65.2 (20 groups).
+  - A floor of months since the last delinquency applies to imputed rows only. No contradictions exist in observed rows.
+
+### Reliability
+- Round-number share: annual_inc 84% vs revol_bal / tot_cur_bal 0.1% (the chance rate) → self-reported vs exact bureau records.
+- Verification does not change rounding (85% / 86% / 81%).
+- Verified loans default more (19.3% vs 12.4%) and are larger ($16k vs $10k median): selective verification makes verification_status confounded, not a measure of accuracy.
+- Ratings:
+  - High: platform fields (installment matches the formula for 99.96% of loans) and bureau fields
+  - Medium: home_ownership, dti, verification_status
+  - Low: annual_inc, emp_title, emp_length
+
+### Leakage
+- Single-feature AUC: bureau_recovery_flag 0.906 vs ≤ 0.681 for every other column. Confirmed leakage, excluded.
+- grade, sub_grade and int_rate are excluded as old-model output (benchmark and ablation in Part B).
+- Audit flags are excluded (planted errors are absent from the holdout); so are zip_code, identifiers, raw dates, and raw/intermediate versions of treated fields.
+- Every column is classified with a reason: 72 = 40 excluded + 2 pending (emp_title → A5, addr_state_clean → A7) + 33 features (after fico_mid replaces the FICO pair and the 3 derived features are added; saved in reports/a4_spec.json).
+
+### Derived features
+- loan_to_income (AUC 0.591) beats both its parts (0.538 / 0.552) and FICO.
+- installment_to_income (0.575) captures the new loan's burden, which dti excludes.
+- fico_mid replaces the FICO pair.
+- revol_bal_zero dropped (AUC 0.501).
+
+### Leakage
+- Single-feature AUC: bureau_recovery_flag 0.906 vs ≤ 0.681 for every other column. Confirmed leakage, excluded.
+- Old-model pricing excluded: grade, sub_grade, int_rate, and installment (Spearman ≈ 0.999 with int_rate within term). Benchmark and ablation in Part B.
+- Audit flags (planted errors, absent from the holdout), zip_code, identifiers, raw dates and superseded raw/capped versions are excluded.
+- All 76 columns classified: 31 features, 43 excluded with reasons, 2 pending (emp_title → A5, addr_state_clean → A7). Saved in reports/a4_spec.json.
+
+### Derived features
+- Kept: fico_mid (replaces the FICO pair) and loan_to_income (AUC 0.591, beats loan_amnt 0.538, income 0.552 and FICO 0.586).
+- Rejected with evidence: installment_to_income (carries int_rate), principal_per_year_to_income (AUC 0.532; long-term risk is selection, not yearly burden), revol_bal_zero (redundant, 0.3%).
