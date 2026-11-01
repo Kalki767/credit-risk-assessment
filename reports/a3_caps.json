@@ -1,0 +1,47 @@
+{
+  "annual_inc": {
+    "method": "p99.5",
+    "upper": 300000.0,
+    "log1p": true
+  },
+  "revol_bal": {
+    "method": "p99.5",
+    "upper": 176560.99999999817,
+    "log1p": true
+  },
+  "tot_cur_bal": {
+    "method": "p99.5",
+    "upper": 755791.2399999986,
+    "log1p": true
+  },
+  "avg_cur_bal": {
+    "method": "p99.5",
+    "upper": 85141.51999999987,
+    "log1p": true
+  },
+  "tot_hi_cred_lim": {
+    "method": "p99.5",
+    "upper": 869472.4799999993,
+    "log1p": true
+  },
+  "total_rev_hi_lim": {
+    "method": "p99.5",
+    "upper": 184669.9999999997,
+    "log1p": true
+  },
+  "dti": {
+    "method": "iqr_fence",
+    "upper": 40.949999999999996,
+    "log1p": false
+  },
+  "revol_util": {
+    "method": "iqr_fence",
+    "upper": 125.0,
+    "log1p": false
+  },
+  "bc_util": {
+    "method": "iqr_fence",
+    "upper": 150.0,
+    "log1p": false
+  }
+}
