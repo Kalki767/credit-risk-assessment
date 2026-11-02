@@ -1,0 +1,498 @@
+{
+  "impute": {
+    "total_acc_edges": [
+      -Infinity,
+      16.0,
+      21.0,
+      27.0,
+      35.0,
+      Infinity
+    ],
+    "hist_months_by_group": [
+      139.0,
+      167.0,
+      183.0,
+      199.5,
+      210.0
+    ],
+    "bc_util_median": 69.4
+  },
+  "feature_caps": {
+    "loan_to_income": 0.46609333333333297
+  },
+  "exclude": {
+    "bureau_recovery_flag": "leakage: recovery happens after charge-off (AUC 0.906; 100% default when 1)",
+    "defaulted": "target (y), not an input",
+    "grade": "old model output; used as benchmark",
+    "sub_grade": "old model output; used as benchmark",
+    "int_rate": "old model output (price set from sub_grade); tested in Part B ablation",
+    "id": "identifier",
+    "issue_d": "raw date text",
+    "issue_dt": "used for the time split only",
+    "earliest_cr_line": "raw date text",
+    "earliest_cr_dt": "replaced by credit_hist_months",
+    "title": "redundant with purpose (63% identical, A1)",
+    "term": "replaced by term_months",
+    "addr_state": "replaced by addr_state_clean",
+    "zip_code": "3-digit location: high cardinality and a proxy risk for protected groups",
+    "inst_ratio": "audit helper from A1",
+    "annual_inc_corrected": "audit flag: marks planted errors, absent from holdout",
+    "bc_util_corrected": "audit flag: marks planted errors, absent from holdout",
+    "revol_util_corrected": "audit flag: marks planted errors, absent from holdout",
+    "loan_amnt_corrected": "audit flag: marks planted errors, absent from holdout",
+    "fico_swapped": "audit flag: marks planted errors, absent from holdout",
+    "earliest_cr_invalid": "audit flag: marks planted errors, absent from holdout",
+    "installment_mismatch": "audit flag: marks planted errors, absent from holdout",
+    "zip_state_mismatch": "audit flag: marks planted errors, absent from holdout",
+    "annual_inc": "replaced by annual_inc_log",
+    "annual_inc_cap": "intermediate; replaced by annual_inc_log",
+    "revol_bal": "replaced by revol_bal_log",
+    "revol_bal_cap": "intermediate; replaced by revol_bal_log",
+    "tot_cur_bal": "replaced by tot_cur_bal_log",
+    "tot_cur_bal_cap": "intermediate; replaced by tot_cur_bal_log",
+    "avg_cur_bal": "replaced by avg_cur_bal_log",
+    "avg_cur_bal_cap": "intermediate; replaced by avg_cur_bal_log",
+    "tot_hi_cred_lim": "replaced by tot_hi_cred_lim_log",
+    "tot_hi_cred_lim_cap": "intermediate; replaced by tot_hi_cred_lim_log",
+    "total_rev_hi_lim": "replaced by total_rev_hi_lim_log",
+    "total_rev_hi_lim_cap": "intermediate; replaced by total_rev_hi_lim_log",
+    "dti": "replaced by dti_cap",
+    "revol_util": "replaced by revol_util_cap",
+    "bc_util": "replaced by bc_util_cap",
+    "fico_range_low": "replaced by fico_mid",
+    "fico_range_high": "replaced by fico_mid",
+    "installment": "encodes int_rate given amount and term (old-model pricing); Part B ablation group",
+    "installment_to_income": "built on installment, so carries int_rate; Part B ablation group",
+    "principal_per_year_to_income": "tested: weaker than loan_to_income (AUC 0.532 vs 0.591), spearman 0.897 with it; dividing by term opposes the term effect",
+    "application_type": "constant in the fit sample (Individual only); joint applications appear from 2015 and in the holdout: unseen by the model, route to review / monitor",
+    "emp_length": "replaced by emp_length_years (0-10, NaN = unknown)",
+    "purpose": "replaced by purpose_grp (levels < 100 loans in fit merged into 'other')",
+    "emp_title": "replaced by job_family (keyword rules, first match wins; 65.5% matched)",
+    "verification_status": "replaced by verification_grp: Verified and Source Verified merged (WoE -0.138 vs -0.118; IV 0.0458 -> 0.0457)",
+    "emp_length_years": "no predictive value on new data: 2015 AUC 0.5076 with 2013-14 WoE (rule: < 0.53 -> exclude); IV 0.012",
+    "job_family": "definition changed mid-sample: unmatched ('other') share 66-67% in 2013Q1-Q3, then 16-17% from 2013Q4 (emp_title appears to switch from employer names to job titles); blank share stable. PSI vs 2015 = 0.128 (understated, since the fit window mixes both eras). Also a fairness proxy risk and weak signal.",
+    "addr_state_clean": "location proxy risk (cannot be tested: no protected attributes in the data) with negligible predictive value: 2015 AUC with 2013-14 WoE 0.5116 (rule: < 0.53 -> exclude); chi-square across 16 big states p = 0.030 (differences detectable in 2013-14 but not useful for ranking new loans)"
+  },
+  "pending": {},
+  "features": [
+    "acc_open_past_24mths",
+    "annual_inc_log",
+    "avg_cur_bal_log",
+    "bc_util_cap",
+    "bc_util_missing",
+    "credit_hist_months",
+    "delinq_2yrs",
+    "dti_cap",
+    "ever_delinq",
+    "fico_mid",
+    "home_ownership",
+    "inq_last_6mths",
+    "loan_amnt",
+    "loan_to_income",
+    "mort_acc",
+    "mths_since_last_delinq",
+    "num_tl_op_past_12m",
+    "open_acc",
+    "pub_rec",
+    "pub_rec_bankruptcies",
+    "purpose_grp",
+    "revol_bal_log",
+    "revol_util_cap",
+    "term_months",
+    "tot_cur_bal_log",
+    "tot_hi_cred_lim_log",
+    "total_acc",
+    "total_rev_hi_lim_log",
+    "verification_grp"
+  ],
+  "purpose_keep": [
+    "car",
+    "credit_card",
+    "debt_consolidation",
+    "home_improvement",
+    "major_purchase",
+    "medical",
+    "other",
+    "small_business"
+  ],
+  "job_families": [
+    [
+      "owner_self",
+      "\\b(?:owner|self employed|self|proprietor|founder|partner)\\b"
+    ],
+    [
+      "healthcare",
+      "\\b(?:nurse|rn|lpn|cna|physician|doctor|dentist|dental|hygienist|pharmac\\w*|therapist|medical|hospital|clinic\\w*|health\\w*|paramedic|emt|surgical|radiolog\\w*)\\b"
+    ],
+    [
+      "education",
+      "\\b(?:teacher|professor|instructor|educator|school|university|college|tutor|principal|faculty)\\b"
+    ],
+    [
+      "legal_social",
+      "\\b(?:attorney|lawyer|paralegal|legal|counsel\\w*|social worker|case manager|pastor|minister|clergy)\\b"
+    ],
+    [
+      "public_safety_gov",
+      "\\b(?:police|sheriff|deputy|firefighter|army|navy|air force|military|usps|postal|letter carrier|sergeant|correction\\w*|federal|county|city of|state of)\\b"
+    ],
+    [
+      "tech_engineering",
+      "\\b(?:engineer\\w*|developer|programmer|software|it|analyst|architect|scientist|network|systems?|data)\\b"
+    ],
+    [
+      "transport_trades",
+      "\\b(?:driver|truck\\w*|technician|tech|mechanic|electrician|operator|machinist|welder|carpenter|plumber|painter|maintenance|installer|warehouse|laborer|foreman|construction|production|assembler|forklift)\\b"
+    ],
+    [
+      "finance_admin",
+      "\\b(?:account\\w*|bookkeeper|controller|finance|financial|bank\\w*|teller|underwriter|auditor|insurance|adjuster|admin\\w*|assistant|clerk|secretary|receptionist|office|coordinator|specialist|representative|rep)\\b"
+    ],
+    [
+      "sales_service",
+      "\\b(?:sales|cashier|server|retail|store|customer|service|agent|attendant|cook|chef|bartender|waitress|stylist|associate|merchandiser)\\b"
+    ],
+    [
+      "management",
+      "\\b(?:manager|management|mgr|director|supervisor|president|vp|ceo|cfo|coo|chief|executive|lead|leader|head|superintendent)\\b"
+    ]
+  ],
+  "verification_map": {
+    "Verified": "verified",
+    "Source Verified": "verified",
+    "Not Verified": "not_verified"
+  },
+  "scorecard_coarse_classing": {
+    "purpose_grp": {
+      "small_business": "high",
+      "debt_consolidation": "medium",
+      "other": "medium",
+      "medical": "medium",
+      "credit_card": "low",
+      "home_improvement": "low",
+      "major_purchase": "low",
+      "car": "low"
+    }
+  },
+  "notes": [
+    "purpose: 3 risk levels for the scorecard. Inside-level chi-square p = 0.855 / 0.942, between p = 4e-10; 2015 AUC with 2013-14 WoE 0.5415 vs 0.5443 for 8 groups (difference < 0.005, within noise). Monitor medical (20.0% -> 29.5%, n~150/yr).",
+    "home_ownership: kept as 3 levels (RENT WoE -0.170, OWN 0.011, MORTGAGE 0.139; all groups >= 1,406 loans; no new levels in 2015)",
+    "No location features in the model (zip_code excluded in A4, state in A7). Indirect discrimination cannot be tested without protected attributes; a production deployment would need a disparate-impact audit."
+  ],
+  "fairness_review": {},
+  "unseen_category_rule": "any category level not seen in the fit sample gets WoE 0 (neutral) in the scorecard",
+  "pca": {
+    "columns": [
+      "acc_open_past_24mths",
+      "annual_inc_log",
+      "avg_cur_bal_log",
+      "bc_util_cap",
+      "credit_hist_months",
+      "dti_cap",
+      "fico_mid",
+      "inq_last_6mths",
+      "loan_amnt",
+      "loan_to_income",
+      "mort_acc",
+      "num_tl_op_past_12m",
+      "open_acc",
+      "revol_bal_log",
+      "revol_util_cap",
+      "tot_cur_bal_log",
+      "tot_hi_cred_lim_log",
+      "total_acc",
+      "total_rev_hi_lim_log"
+    ],
+    "log1p": [
+      "inq_last_6mths",
+      "mort_acc",
+      "num_tl_op_past_12m",
+      "open_acc",
+      "credit_hist_months",
+      "acc_open_past_24mths"
+    ],
+    "excluded": {
+      "delinq_2yrs": "mostly zeros (80-88%), skew > 2 even after log1p; near-binary, IV <= 0.004",
+      "pub_rec": "mostly zeros (80-88%), skew > 2 even after log1p; near-binary, IV <= 0.004",
+      "pub_rec_bankruptcies": "mostly zeros (80-88%), skew > 2 even after log1p; near-binary, IV <= 0.004"
+    },
+    "mean": [
+      1.5068973306456062,
+      11.071047838425248,
+      8.899946052926225,
+      65.16566478814444,
+      5.186667622844168,
+      17.666501774159883,
+      695.452654282335,
+      0.43359900762576015,
+      14635.745842899882,
+      0.22057050973980918,
+      0.7884577152928816,
+      0.933902849197989,
+      2.4468039141860456,
+      9.316023949657815,
+      56.27419467056286,
+      11.192907524809312,
+      11.540463164401315,
+      25.64085437973979,
+      10.010023237923882
+    ],
+    "std": [
+      0.5836047768354129,
+      0.5098271148055916,
+      1.174977498030718,
+      26.2094571406518,
+      0.4525637094615971,
+      7.941359768350464,
+      29.390403193043433,
+      0.5026861654488016,
+      8327.852148783155,
+      0.10988051797119247,
+      0.7235854607332293,
+      0.5551883009139272,
+      0.3956574509666941,
+      1.069665015309729,
+      22.939423916260743,
+      1.2750938027267151,
+      1.0646134444288946,
+      11.545071352417109,
+      0.796533051007977
+    ]
+  },
+  "fa": {
+    "columns": [
+      "acc_open_past_24mths",
+      "annual_inc_log",
+      "bc_util_cap",
+      "credit_hist_months",
+      "dti_cap",
+      "fico_mid",
+      "inq_last_6mths",
+      "loan_amnt",
+      "mort_acc",
+      "num_tl_op_past_12m",
+      "open_acc",
+      "revol_bal_log",
+      "revol_util_cap",
+      "tot_cur_bal_log",
+      "tot_hi_cred_lim_log",
+      "total_acc",
+      "total_rev_hi_lim_log"
+    ],
+    "excluded_from_fa": {
+      "avg_cur_bal_log": "near-exact combination of tot_cur_bal and account count (PCA PC19 eigenvalue ~0); unstable matrix inverse / Heywood risk",
+      "loan_to_income": "formula of loan_amnt / income: KMO 0.29; removing it raised overall KMO 0.661 -> 0.724 (loan_amnt 0.49 -> 0.87, annual_inc 0.54 -> 0.79)"
+    },
+    "bartlett_p": 0.0,
+    "kmo_overall": 0.724,
+    "n_factors": 4,
+    "rotation": "promax",
+    "factor_names": {
+      "F1": "debt_size",
+      "F2": "card_utilization",
+      "F3": "card_size",
+      "F4": "credit_seeking"
+    },
+    "loadings": {
+      "F1": {
+        "acc_open_past_24mths": -0.02,
+        "annual_inc_log": 0.62,
+        "bc_util_cap": 0.12,
+        "credit_hist_months": 0.28,
+        "dti_cap": -0.14,
+        "fico_mid": 0.12,
+        "inq_last_6mths": 0.06,
+        "loan_amnt": 0.33,
+        "mort_acc": 0.75,
+        "num_tl_op_past_12m": -0.01,
+        "open_acc": 0.04,
+        "revol_bal_log": 0.06,
+        "revol_util_cap": 0.2,
+        "tot_cur_bal_log": 0.96,
+        "tot_hi_cred_lim_log": 0.95,
+        "total_acc": 0.28,
+        "total_rev_hi_lim_log": -0.02
+      },
+      "F2": {
+        "acc_open_past_24mths": -0.02,
+        "annual_inc_log": 0.0,
+        "bc_util_cap": 0.88,
+        "credit_hist_months": -0.04,
+        "dti_cap": 0.17,
+        "fico_mid": -0.56,
+        "inq_last_6mths": -0.03,
+        "loan_amnt": 0.02,
+        "mort_acc": 0.04,
+        "num_tl_op_past_12m": -0.03,
+        "open_acc": -0.1,
+        "revol_bal_log": 0.27,
+        "revol_util_cap": 0.94,
+        "tot_cur_bal_log": 0.16,
+        "tot_hi_cred_lim_log": 0.03,
+        "total_acc": -0.06,
+        "total_rev_hi_lim_log": -0.36
+      },
+      "F3": {
+        "acc_open_past_24mths": 0.0,
+        "annual_inc_log": 0.06,
+        "bc_util_cap": 0.03,
+        "credit_hist_months": 0.16,
+        "dti_cap": 0.31,
+        "fico_mid": 0.13,
+        "inq_last_6mths": -0.1,
+        "loan_amnt": 0.32,
+        "mort_acc": -0.15,
+        "num_tl_op_past_12m": -0.05,
+        "open_acc": 0.49,
+        "revol_bal_log": 0.79,
+        "revol_util_cap": 0.06,
+        "tot_cur_bal_log": -0.09,
+        "tot_hi_cred_lim_log": -0.04,
+        "total_acc": 0.24,
+        "total_rev_hi_lim_log": 0.94
+      },
+      "F4": {
+        "acc_open_past_24mths": 0.84,
+        "annual_inc_log": -0.04,
+        "bc_util_cap": -0.14,
+        "credit_hist_months": -0.04,
+        "dti_cap": 0.2,
+        "fico_mid": -0.18,
+        "inq_last_6mths": 0.31,
+        "loan_amnt": -0.14,
+        "mort_acc": 0.08,
+        "num_tl_op_past_12m": 0.73,
+        "open_acc": 0.48,
+        "revol_bal_log": -0.17,
+        "revol_util_cap": -0.24,
+        "tot_cur_bal_log": 0.14,
+        "tot_hi_cred_lim_log": 0.13,
+        "total_acc": 0.43,
+        "total_rev_hi_lim_log": -0.12
+      }
+    },
+    "factor_correlations": {
+      "F1": {
+        "F1": 1.0,
+        "F2": -0.18,
+        "F3": 0.52,
+        "F4": 0.1
+      },
+      "F2": {
+        "F1": -0.18,
+        "F2": 1.0,
+        "F3": 0.05,
+        "F4": -0.01
+      },
+      "F3": {
+        "F1": 0.52,
+        "F2": 0.05,
+        "F3": 1.0,
+        "F4": 0.2
+      },
+      "F4": {
+        "F1": 0.1,
+        "F2": -0.01,
+        "F3": 0.2,
+        "F4": 1.0
+      }
+    },
+    "communalities": {
+      "acc_open_past_24mths": 0.704,
+      "annual_inc_log": 0.421,
+      "bc_util_cap": 0.769,
+      "credit_hist_months": 0.152,
+      "dti_cap": 0.176,
+      "fico_mid": 0.401,
+      "inq_last_6mths": 0.099,
+      "loan_amnt": 0.31,
+      "mort_acc": 0.472,
+      "num_tl_op_past_12m": 0.522,
+      "open_acc": 0.595,
+      "revol_bal_log": 0.737,
+      "revol_util_cap": 0.916,
+      "tot_cur_bal_log": 0.838,
+      "tot_hi_cred_lim_log": 0.9,
+      "total_acc": 0.467,
+      "total_rev_hi_lim_log": 0.929
+    },
+    "notes": [
+      "5 factors rejected: F5 (dti 0.64, income -0.54) mainly reflects the dti = debt/income formula, the same kind of private link that removed loan_to_income from FA; also less stable.",
+      "factor_analyzer's phi_ lists factors in a different order than loadings_ (F3/F4 swapped here); verified by reproducing the unrotated communalities (max difference 0.002).",
+      "varimax gives the same four groups, so the factor names are robust to the rotation choice."
+    ],
+    "score_columns": [
+      "factor_debt_size",
+      "factor_card_utilization",
+      "factor_card_size",
+      "factor_credit_seeking"
+    ]
+  },
+  "stability": {
+    "psi_2013_14_vs_2015": {
+      "acc_open_past_24mths": 0.021,
+      "annual_inc_log": 0.004,
+      "avg_cur_bal_log": 0.007,
+      "bc_util_cap": 0.02,
+      "bc_util_missing": 0.0,
+      "credit_hist_months": 0.004,
+      "delinq_2yrs": 0.001,
+      "dti_cap": 0.025,
+      "ever_delinq": 0.002,
+      "fico_mid": 0.005,
+      "home_ownership": 0.004,
+      "inq_last_6mths": 0.045,
+      "job_family": 0.128,
+      "loan_amnt": 0.003,
+      "loan_to_income": 0.003,
+      "mort_acc": 0.012,
+      "mths_since_last_delinq": 0.005,
+      "num_tl_op_past_12m": 0.035,
+      "open_acc": 0.012,
+      "pub_rec": 0.008,
+      "pub_rec_bankruptcies": 0.002,
+      "purpose_grp": 0.003,
+      "revol_bal_log": 0.005,
+      "revol_util_cap": 0.021,
+      "term_months": 0.002,
+      "tot_cur_bal_log": 0.007,
+      "tot_hi_cred_lim_log": 0.007,
+      "total_acc": 0.005,
+      "total_rev_hi_lim_log": 0.008,
+      "verification_grp": 0.003,
+      "factor_debt_size": 0.003,
+      "factor_card_utilization": 0.017,
+      "factor_card_size": 0.005,
+      "factor_credit_seeking": 0.019
+    },
+    "note": "All features stable (PSI < 0.10) except job_family (0.128). PSI tracks the bulk; tail growth in revol_bal / total_rev_hi_lim (A3 cap counts) is not visible in PSI."
+  },
+  "factors_vs_grade": {
+    "spearman_with_grade": {
+      "factor_debt_size": -0.186,
+      "factor_card_utilization": 0.361,
+      "factor_card_size": -0.086,
+      "factor_credit_seeking": 0.188
+    },
+    "auc": {
+      "auc_2013_14": {
+        "grade (old model)": 0.677,
+        "4 factor scores combined": 0.632
+      },
+      "auc_2015": {
+        "grade (old model)": 0.703,
+        "4 factor scores combined": 0.633
+      }
+    },
+    "gini_2013_14": {
+      "grade": 0.354,
+      "factors": 0.264
+    },
+    "logit_weights": {
+      "factor_debt_size": -0.238,
+      "factor_card_utilization": 0.3,
+      "factor_card_size": 0.043,
+      "factor_credit_seeking": 0.377
+    }
+  }
+}

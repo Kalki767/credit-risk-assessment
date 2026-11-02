@@ -38,6 +38,13 @@
 - Loans per year: 2013 = 5,454, 2014 = 9,212, 2015 = 15,934, holdout 2016 = 5,000
 - 2016 drift: joint applications ×6; individual DTI above 40
 
+## A2: Target analysis
+
+- Overall default rate 18.7% (5,617 of 30,000 loans). 36-month 14.0% vs 60-month 32.3%.
+- Monthly default rate chart: reports/default_rate_by_month.png.
+- **In-progress (survivorship) bias:** data ends 2019-03. A 60-month loan issued in 2014 or later could not have reached its scheduled end, so among those, only early outcomes (mostly defaults and early payoffs) are observed. Share of 60-month loans still at risk at the cut-off: 0% (2013), 78% (2014), 100% (2015).
+- 60-month default rate: 24.7% on loans that could have finished vs 34.9% including the biased ones. Absolute default rates for 2014–2015 60-month loans are overstated; comparisons and rankings are less affected.
+
 ## A3: Financial values and outliers (fit sample: loans issued ≤ 2014, n = 14,373)
 
 ### Distributions
@@ -179,3 +186,34 @@
 - Stable across periods. Use as model features decided in the Part B ablation.
 
 Saved: reports/a6_spec.json, data/interim/a6_factor_model.joblib, data/interim/train_a6.parquet, three plots in reports/.
+
+## A7: Stability, uncertainty, factors vs grade, location, accepted-only
+
+### Stability (PSI, 2013–14 vs 2015)
+- All features and factor scores are stable (< 0.10) except job_family (0.128).
+- PSI tracks the bulk; the A3 tail growth (revol_bal / total_rev_hi_lim above 2014 caps) is invisible to it, so monitoring needs both.
+- **job_family excluded**: its "other" share stepped from 66–67% (2013Q1–Q3) to 16–17% from 2013Q4 with blanks stable. emp_title apparently switched from employer names to job titles; the training window mixes both eras.
+
+### Confidence intervals (95% Wilson, loans ≤ 2014)
+- Term: 13.2% vs 28.3%.
+- Grades A–E clearly separated; E/F/G overlap.
+- Break-even 12.5%: grades A–B profitable on average, C and worse not; 36m loans overall sit just above (12.6–13.9%). This depends on the brief's flat +10% / −70% economics.
+- Mortgage vs rent and verified vs not verified clearly different.
+- small_business clearly riskier; car / medical / major_purchase too uncertain to place.
+- Saved: reports/a7_default_rate_ci.csv.
+
+### Factors vs grade
+- Card utilization tracks grade most (Spearman 0.361).
+- AUC grade 0.677 / 0.703 vs 4 factors 0.632 / 0.633 (2013–14 / 2015); the factors capture ~75% of grade's Gini and are stable.
+- Credit-seeking carries the largest weight (+0.377) despite a weaker link to grade: possibly under-used by grade.
+
+### Location
+- addr_state_clean excluded: 2015 AUC 0.5116 (< 0.53 rule); chi-square p = 0.030 (detectable but not useful).
+- No location features in the model; disparate impact cannot be tested without protected attributes.
+
+### Accepted-only
+- FICO floor 662 and DTI ceiling 39.97 show the approval policy.
+- Screened fields (public records 15.8%, bankruptcies 12.4%, delinquency 19.5%) carry no signal among approved borrowers.
+- The model is valid only inside the policy range; out-of-range applicants → manual review.
+
+Final input list: 29 features, nothing pending. Saved: reports/a7_spec.json.
