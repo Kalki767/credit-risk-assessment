@@ -143,3 +143,39 @@
 ### Rules
 - An unseen category level gets WoE 0 (neutral).
 - Features: 30. Pending: addr_state_clean (A7). Saved in reports/a5_spec.json.
+
+## A6: PCA and factor analysis (fit sample: loans issued ≤ 2014)
+
+### Input
+- 22 numeric candidates (more than 2 values; flags, term and mths_since_last_delinq excluded).
+- delinq_2yrs, pub_rec and pub_rec_bankruptcies excluded from PCA (80–88% zeros, near-binary).
+- log1p on 6 count fields, decided by max |z| (rule: raw > 5 → log1p), not by the skew number, which improved only because gaps shrank:
+  - num_tl_op_past_12m 11.5 → 3.8, open_acc 8.3 → 4.4, acc_open_past_24mths 7.7 → 3.1
+  - mort_acc 7.4 → 3.0, credit_hist_months 6.4 → 3.4, inq_last_6mths 5.0 → 3.0 (borderline)
+- fico_mid kept as is (floor, not tail).
+- 19 inputs standardized with means/stds learned on ≤ 2014.
+
+### Correlations
+- Five blocks: debt size (0.89–0.97), card utilization (0.82), credit-seeking (0.71), card size (0.69), account count (0.67).
+- Several blocks are by construction; the 0.94–0.97 pairs are a multicollinearity risk for the scorecard.
+
+### PCA
+- PC1 5.16 (27.2%).
+- Elbow → 4 (63.0%); Kaiser → 6 (75.1%).
+- Loadings: PC1 credit size, PC2 existing cards vs new accounts (a contrast created by the perpendicular rule), PC3 credit stress, PC4 size of the request, PC5 income squeeze (weak). PC6/PC7 are single-column leftovers.
+- PC19 ≈ 0: avg_cur_bal ≈ tot_cur_bal − account count on the log scale (near-redundant).
+
+### Factor analysis
+- avg_cur_bal (near-redundant) and loan_to_income (formula of loan_amnt / income) excluded → 17 inputs.
+- Bartlett p ≈ 0. KMO 0.661 → 0.724 after removing loan_to_income (loan_amnt 0.49 → 0.87, annual_inc 0.54 → 0.79); all columns ≥ 0.5.
+- **4 factors, promax**: debt size, card utilization, card size, credit-seeking. 5 factors rejected (F5 mostly the dti = debt/income formula).
+- No Heywood case: unrotated communalities ≤ 0.97.
+- Factor correlation debt size ↔ card size 0.56 (≥ 0.3 → promax); varimax gives the same groups.
+- Library issue: factor_analyzer's phi_ is ordered differently from loadings_ (F3/F4 swapped). Confirmed by factor-score correlations and by reproducing the unrotated communalities (max difference 0.002).
+- Environment: scikit-learn pinned < 1.8 (factor_analyzer uses force_all_finite).
+
+### Factor scores (fitted on ≤ 2014, applied to all loans)
+- AUC 2013–14 / 2015: credit-seeking 0.579 / 0.586 (riskier), card utilization 0.579 / 0.575 (riskier), debt size 0.560 / 0.558 (safer), card size 0.507 / 0.504 (no signal, direction flips).
+- Stable across periods. Use as model features decided in the Part B ablation.
+
+Saved: reports/a6_spec.json, data/interim/a6_factor_model.joblib, data/interim/train_a6.parquet, three plots in reports/.

@@ -15,6 +15,7 @@ To be filled in.
 | | 2026-10-30 | 3.5 | Read brief and planned; set up repo, Python env and downloaded data; studied the business context, loan life cycle, leakage and columns |
 | 2026-10-31 | 5.5 | Studied the data guide; first look at the four files; data audit A1 (duplicates, date formats, address state, impossible values, contradictions, leakage, free text, holdout checks); target analysis A2 (default rate by term and month, in-progress-loan bias) |
 
+| 2026-10-31 | 6.5 |
 ## AI tools used
 | Tool | What I used it for |
 | --- | --- |
