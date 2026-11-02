@@ -1,0 +1,1281 @@
+{
+  "contract_version": "1.0.0",
+  "fit_cutoff": "2014-12-31",
+  "n_fit_rows": 14373,
+  "input": "one row per application with its bureau record (the holdout_applications.csv columns); validation ranges apply to cleaned values",
+  "fields": [
+    {
+      "name": "loan_amnt",
+      "type": "float",
+      "min": 1000,
+      "max": 40000,
+      "role": "model input",
+      "cleaning": "divided by 10 when the installment is exactly 1/10 of the amortization payment (ratio 0.099-0.101); not capped (bounded by lending policy)",
+      "missing_strategy": "required",
+      "reliability": "high",
+      "reliability_reason": "platform-set; installment formula matches 99.96% of loans"
+    },
+    {
+      "name": "term",
+      "type": "category",
+      "min": null,
+      "max": null,
+      "role": "model input (as term_months)",
+      "cleaning": "parsed to term_months (36 or 60)",
+      "missing_strategy": "required",
+      "reliability": "high",
+      "reliability_reason": "platform-set",
+      "allowed_values": [
+        "36 months",
+        "60 months"
+      ]
+    },
+    {
+      "name": "int_rate",
+      "type": "float",
+      "min": 0,
+      "max": 40,
+      "role": "cleaning check only",
+      "cleaning": "used to verify installment (x10 rule); excluded from the model: old-model pricing (set from sub_grade)",
+      "missing_strategy": "required",
+      "reliability": "high",
+      "reliability_reason": "platform-set"
+    },
+    {
+      "name": "installment",
+      "type": "float",
+      "min": 0.01,
+      "max": null,
+      "role": "cleaning check only",
+      "cleaning": "used for the x10 rule; excluded from the model: encodes int_rate (Spearman 0.999 within term)",
+      "missing_strategy": "required",
+      "reliability": "high",
+      "reliability_reason": "platform-set; 11 mismatches flagged"
+    },
+    {
+      "name": "grade",
+      "type": "category",
+      "min": null,
+      "max": null,
+      "role": "excluded",
+      "cleaning": "old model output; benchmark only",
+      "missing_strategy": "n/a",
+      "reliability": "high",
+      "reliability_reason": "platform-set",
+      "allowed_values": [
+        "A",
+        "B",
+        "C",
+        "D",
+        "E",
+        "F",
+        "G"
+      ]
+    },
+    {
+      "name": "sub_grade",
+      "type": "category",
+      "min": null,
+      "max": null,
+      "role": "excluded",
+      "cleaning": "old model output; benchmark only",
+      "missing_strategy": "n/a",
+      "reliability": "high",
+      "reliability_reason": "platform-set"
+    },
+    {
+      "name": "emp_title",
+      "type": "text",
+      "min": null,
+      "max": null,
+      "role": "excluded",
+      "cleaning": "definition changed in 2013Q4 (employer names -> job titles; PSI 2013 vs 2014 = 0.852); fairness proxy risk",
+      "missing_strategy": "n/a",
+      "reliability": "low",
+      "reliability_reason": "free text, 13,327 distinct spellings; meaning changed over time"
+    },
+    {
+      "name": "emp_length",
+      "type": "category",
+      "min": null,
+      "max": null,
+      "role": "excluded",
+      "cleaning": "no predictive value on new loans (2015 AUC 0.5076 with 2013-14 WoE)",
+      "missing_strategy": "n/a",
+      "reliability": "low",
+      "reliability_reason": "self-reported; 5% blank, same people as blank emp_title"
+    },
+    {
+      "name": "home_ownership",
+      "type": "category",
+      "min": null,
+      "max": null,
+      "role": "model input",
+      "cleaning": "none (3 levels, all >= 1,406 loans); unseen level -> WoE 0",
+      "missing_strategy": "required",
+      "reliability": "medium",
+      "reliability_reason": "self-reported but consistent: mortgage holders carry mortgage-sized balances",
+      "allowed_values": [
+        "MORTGAGE",
+        "RENT",
+        "OWN"
+      ]
+    },
+    {
+      "name": "annual_inc",
+      "type": "float",
+      "min": 1000,
+      "max": 10000000,
+      "role": "model input (as annual_inc_log, loan_to_income)",
+      "cleaning": "values below 1,000 treated as thousands (x1,000); capped at p99.5 = 300,000.00 (fitted <= 2014); then log1p",
+      "missing_strategy": "required",
+      "reliability": "low",
+      "reliability_reason": "self-reported; 84% round thousands; verification does not change rounding; implausible extremes ($7.5M 'Verified')"
+    },
+    {
+      "name": "verification_status",
+      "type": "category",
+      "min": null,
+      "max": null,
+      "role": "model input (as verification_grp)",
+      "cleaning": "Verified and Source Verified merged into 'verified'",
+      "missing_strategy": "required",
+      "reliability": "medium",
+      "reliability_reason": "accurate label but confounded: the platform verified larger, riskier loans",
+      "allowed_values": [
+        "Verified",
+        "Source Verified",
+        "Not Verified"
+      ]
+    },
+    {
+      "name": "issue_d",
+      "type": "date",
+      "min": null,
+      "max": null,
+      "role": "time split; history length",
+      "cleaning": "three formats parsed explicitly to month precision",
+      "missing_strategy": "required",
+      "reliability": "high",
+      "reliability_reason": "platform-set"
+    },
+    {
+      "name": "purpose",
+      "type": "category",
+      "min": null,
+      "max": null,
+      "role": "model input (as purpose_grp)",
+      "cleaning": "levels with < 100 loans (<= 2014) and unseen levels -> 'other'; scorecard uses 3 risk levels",
+      "missing_strategy": "required",
+      "reliability": "medium",
+      "reliability_reason": "self-declared by the applicant"
+    },
+    {
+      "name": "title",
+      "type": "text",
+      "min": null,
+      "max": null,
+      "role": "excluded",
+      "cleaning": "redundant with purpose (63% identical)",
+      "missing_strategy": "n/a",
+      "reliability": "low",
+      "reliability_reason": "free text"
+    },
+    {
+      "name": "zip_code",
+      "type": "text",
+      "min": null,
+      "max": null,
+      "role": "excluded",
+      "cleaning": "location proxy risk; high cardinality",
+      "missing_strategy": "n/a",
+      "reliability": "medium",
+      "reliability_reason": "format valid; 27 ZIP/state mismatches flagged"
+    },
+    {
+      "name": "addr_state",
+      "type": "category",
+      "min": null,
+      "max": null,
+      "role": "excluded",
+      "cleaning": "names/case cleaned to codes; excluded: location proxy risk, 2015 AUC 0.512",
+      "missing_strategy": "n/a",
+      "reliability": "medium",
+      "reliability_reason": "cleaned to two-letter codes"
+    },
+    {
+      "name": "dti",
+      "type": "float",
+      "min": 0,
+      "max": null,
+      "role": "model input (as dti_cap)",
+      "cleaning": "capped at IQR fence = 40.95 (fitted <= 2014)",
+      "missing_strategy": "required",
+      "reliability": "medium",
+      "reliability_reason": "computed by the platform from self-reported income"
+    },
+    {
+      "name": "application_type",
+      "type": "category",
+      "min": null,
+      "max": null,
+      "role": "excluded",
+      "cleaning": "constant in training (Individual only); joint applications -> manual review",
+      "missing_strategy": "n/a",
+      "reliability": "high",
+      "reliability_reason": "platform-set",
+      "allowed_values": [
+        "Individual",
+        "Joint App"
+      ]
+    },
+    {
+      "name": "bureau_recovery_flag",
+      "type": "int",
+      "min": null,
+      "max": null,
+      "role": "excluded",
+      "cleaning": "LEAKAGE: post-default recovery status (100% default when 1); removed by cleaning",
+      "missing_strategy": "n/a",
+      "reliability": "n/a",
+      "reliability_reason": "not known at application time"
+    },
+    {
+      "name": "acc_open_past_24mths",
+      "type": "int",
+      "min": 0,
+      "max": null,
+      "role": "model input",
+      "cleaning": "log1p for PCA/FA only",
+      "missing_strategy": "required",
+      "reliability": "high",
+      "reliability_reason": "credit-bureau record; balances are exact (0.1% round thousands = chance rate)"
+    },
+    {
+      "name": "avg_cur_bal",
+      "type": "float",
+      "min": 0,
+      "max": null,
+      "role": "model input (as avg_cur_bal_log)",
+      "cleaning": "capped at p99.5 = 85,141.52 (fitted <= 2014); then log1p",
+      "missing_strategy": "required",
+      "reliability": "high",
+      "reliability_reason": "bureau record; near-redundant: balance / number of accounts (VIF 168)"
+    },
+    {
+      "name": "bc_util",
+      "type": "float",
+      "min": 0,
+      "max": null,
+      "role": "model input (as bc_util_cap)",
+      "cleaning": "negative values: sign flipped (absolute value); capped at IQR fence = 150.00 (fitted <= 2014)",
+      "missing_strategy": "missing -> flag bc_util_missing + median (fitted <= 2014)",
+      "reliability": "high",
+      "reliability_reason": "bureau record"
+    },
+    {
+      "name": "delinq_2yrs",
+      "type": "int",
+      "min": 0,
+      "max": null,
+      "role": "model input",
+      "cleaning": "none",
+      "missing_strategy": "required",
+      "reliability": "high",
+      "reliability_reason": "credit-bureau record; balances are exact (0.1% round thousands = chance rate)"
+    },
+    {
+      "name": "earliest_cr_line",
+      "type": "date",
+      "min": null,
+      "max": null,
+      "role": "model input (as credit_hist_months)",
+      "cleaning": "three formats parsed; dates after issue_d set to missing + flag",
+      "missing_strategy": "missing -> median history of its total_acc group (fitted <= 2014), at least months since last delinquency",
+      "reliability": "high",
+      "reliability_reason": "bureau record; 1% impossible dates"
+    },
+    {
+      "name": "fico_range_low",
+      "type": "int",
+      "min": 300,
+      "max": 850,
+      "role": "model input (as fico_mid)",
+      "cleaning": "swapped with high when high < low",
+      "missing_strategy": "required",
+      "reliability": "high",
+      "reliability_reason": "bureau score"
+    },
+    {
+      "name": "fico_range_high",
+      "type": "int",
+      "min": 300,
+      "max": 850,
+      "role": "model input (as fico_mid)",
+      "cleaning": "swapped with low when high < low",
+      "missing_strategy": "required",
+      "reliability": "high",
+      "reliability_reason": "bureau score"
+    },
+    {
+      "name": "inq_last_6mths",
+      "type": "int",
+      "min": 0,
+      "max": null,
+      "role": "model input",
+      "cleaning": "log1p for PCA/FA only",
+      "missing_strategy": "required",
+      "reliability": "high",
+      "reliability_reason": "credit-bureau record; balances are exact (0.1% round thousands = chance rate)"
+    },
+    {
+      "name": "mort_acc",
+      "type": "int",
+      "min": 0,
+      "max": null,
+      "role": "model input",
+      "cleaning": "log1p for PCA/FA only",
+      "missing_strategy": "required",
+      "reliability": "high",
+      "reliability_reason": "credit-bureau record; balances are exact (0.1% round thousands = chance rate)"
+    },
+    {
+      "name": "mths_since_last_delinq",
+      "type": "float",
+      "min": 0,
+      "max": null,
+      "role": "model input",
+      "cleaning": "none",
+      "missing_strategy": "missing = never delinquent -> flag ever_delinq; kept missing (own WoE bin)",
+      "reliability": "high",
+      "reliability_reason": "credit-bureau record; balances are exact (0.1% round thousands = chance rate)"
+    },
+    {
+      "name": "num_tl_op_past_12m",
+      "type": "int",
+      "min": 0,
+      "max": null,
+      "role": "model input",
+      "cleaning": "log1p for PCA/FA only",
+      "missing_strategy": "required",
+      "reliability": "high",
+      "reliability_reason": "credit-bureau record; balances are exact (0.1% round thousands = chance rate)"
+    },
+    {
+      "name": "open_acc",
+      "type": "int",
+      "min": 0,
+      "max": null,
+      "role": "model input",
+      "cleaning": "log1p for PCA/FA only",
+      "missing_strategy": "required",
+      "reliability": "high",
+      "reliability_reason": "credit-bureau record; balances are exact (0.1% round thousands = chance rate)"
+    },
+    {
+      "name": "pub_rec",
+      "type": "int",
+      "min": 0,
+      "max": null,
+      "role": "model input",
+      "cleaning": "none",
+      "missing_strategy": "required",
+      "reliability": "high",
+      "reliability_reason": "credit-bureau record; balances are exact (0.1% round thousands = chance rate)"
+    },
+    {
+      "name": "pub_rec_bankruptcies",
+      "type": "int",
+      "min": 0,
+      "max": null,
+      "role": "model input",
+      "cleaning": "none",
+      "missing_strategy": "required",
+      "reliability": "high",
+      "reliability_reason": "credit-bureau record; balances are exact (0.1% round thousands = chance rate)"
+    },
+    {
+      "name": "revol_bal",
+      "type": "float",
+      "min": 0,
+      "max": null,
+      "role": "model input (as revol_bal_log)",
+      "cleaning": "capped at p99.5 = 176,561.00 (fitted <= 2014); then log1p",
+      "missing_strategy": "required",
+      "reliability": "high",
+      "reliability_reason": "credit-bureau record; balances are exact (0.1% round thousands = chance rate)"
+    },
+    {
+      "name": "revol_util",
+      "type": "float",
+      "min": 0,
+      "max": null,
+      "role": "model input (as revol_util_cap)",
+      "cleaning": "negative values: sign flipped (absolute value); capped at IQR fence = 125.00 (fitted <= 2014)",
+      "missing_strategy": "missing -> recomputed as revol_bal / total_rev_hi_lim x 100 (0 when there is no revolving credit)",
+      "reliability": "high",
+      "reliability_reason": "recomputation from balance / limit agrees within 5 pts for 96.2%"
+    },
+    {
+      "name": "tot_cur_bal",
+      "type": "float",
+      "min": 0,
+      "max": null,
+      "role": "model input (as tot_cur_bal_log)",
+      "cleaning": "capped at p99.5 = 755,791.24 (fitted <= 2014); then log1p",
+      "missing_strategy": "required",
+      "reliability": "high",
+      "reliability_reason": "credit-bureau record; balances are exact (0.1% round thousands = chance rate)"
+    },
+    {
+      "name": "tot_hi_cred_lim",
+      "type": "float",
+      "min": 0,
+      "max": null,
+      "role": "model input (as tot_hi_cred_lim_log)",
+      "cleaning": "capped at p99.5 = 869,472.48 (fitted <= 2014); then log1p",
+      "missing_strategy": "required",
+      "reliability": "high",
+      "reliability_reason": "credit-bureau record; balances are exact (0.1% round thousands = chance rate)"
+    },
+    {
+      "name": "total_acc",
+      "type": "int",
+      "min": 0,
+      "max": null,
+      "role": "model input",
+      "cleaning": "none",
+      "missing_strategy": "required",
+      "reliability": "high",
+      "reliability_reason": "credit-bureau record; balances are exact (0.1% round thousands = chance rate)"
+    },
+    {
+      "name": "total_rev_hi_lim",
+      "type": "float",
+      "min": 0,
+      "max": null,
+      "role": "model input (as total_rev_hi_lim_log)",
+      "cleaning": "capped at p99.5 = 184,670.00 (fitted <= 2014); then log1p",
+      "missing_strategy": "required",
+      "reliability": "high",
+      "reliability_reason": "credit-bureau record; balances are exact (0.1% round thousands = chance rate)"
+    }
+  ],
+  "model_features": [
+    "acc_open_past_24mths",
+    "annual_inc_log",
+    "avg_cur_bal_log",
+    "bc_util_cap",
+    "bc_util_missing",
+    "credit_hist_months",
+    "delinq_2yrs",
+    "dti_cap",
+    "ever_delinq",
+    "fico_mid",
+    "home_ownership",
+    "inq_last_6mths",
+    "loan_amnt",
+    "loan_to_income",
+    "mort_acc",
+    "mths_since_last_delinq",
+    "num_tl_op_past_12m",
+    "open_acc",
+    "pub_rec",
+    "pub_rec_bankruptcies",
+    "purpose_grp",
+    "revol_bal_log",
+    "revol_util_cap",
+    "term_months",
+    "tot_cur_bal_log",
+    "tot_hi_cred_lim_log",
+    "total_acc",
+    "total_rev_hi_lim_log",
+    "verification_grp"
+  ],
+  "excluded": {
+    "bureau_recovery_flag": "leakage: recovery happens after charge-off (AUC 0.906; 100% default when 1)",
+    "defaulted": "target (y), not an input",
+    "grade": "old model output; used as benchmark",
+    "sub_grade": "old model output; used as benchmark",
+    "int_rate": "old model output (price set from sub_grade); tested in Part B ablation",
+    "id": "identifier",
+    "issue_d": "raw date text",
+    "issue_dt": "used for the time split only",
+    "earliest_cr_line": "raw date text",
+    "earliest_cr_dt": "replaced by credit_hist_months",
+    "title": "redundant with purpose (63% identical, A1)",
+    "term": "replaced by term_months",
+    "addr_state": "replaced by addr_state_clean",
+    "zip_code": "3-digit location: high cardinality and a proxy risk for protected groups",
+    "inst_ratio": "audit helper from A1",
+    "annual_inc_corrected": "audit flag: marks planted errors, absent from holdout",
+    "bc_util_corrected": "audit flag: marks planted errors, absent from holdout",
+    "revol_util_corrected": "audit flag: marks planted errors, absent from holdout",
+    "loan_amnt_corrected": "audit flag: marks planted errors, absent from holdout",
+    "fico_swapped": "audit flag: marks planted errors, absent from holdout",
+    "earliest_cr_invalid": "audit flag: marks planted errors, absent from holdout",
+    "installment_mismatch": "audit flag: marks planted errors, absent from holdout",
+    "zip_state_mismatch": "audit flag: marks planted errors, absent from holdout",
+    "annual_inc": "replaced by annual_inc_log",
+    "annual_inc_cap": "intermediate; replaced by annual_inc_log",
+    "revol_bal": "replaced by revol_bal_log",
+    "revol_bal_cap": "intermediate; replaced by revol_bal_log",
+    "tot_cur_bal": "replaced by tot_cur_bal_log",
+    "tot_cur_bal_cap": "intermediate; replaced by tot_cur_bal_log",
+    "avg_cur_bal": "replaced by avg_cur_bal_log",
+    "avg_cur_bal_cap": "intermediate; replaced by avg_cur_bal_log",
+    "tot_hi_cred_lim": "replaced by tot_hi_cred_lim_log",
+    "tot_hi_cred_lim_cap": "intermediate; replaced by tot_hi_cred_lim_log",
+    "total_rev_hi_lim": "replaced by total_rev_hi_lim_log",
+    "total_rev_hi_lim_cap": "intermediate; replaced by total_rev_hi_lim_log",
+    "dti": "replaced by dti_cap",
+    "revol_util": "replaced by revol_util_cap",
+    "bc_util": "replaced by bc_util_cap",
+    "fico_range_low": "replaced by fico_mid",
+    "fico_range_high": "replaced by fico_mid",
+    "installment": "encodes int_rate given amount and term (old-model pricing); Part B ablation group",
+    "installment_to_income": "built on installment, so carries int_rate; Part B ablation group",
+    "principal_per_year_to_income": "tested: weaker than loan_to_income (AUC 0.532 vs 0.591), spearman 0.897 with it; dividing by term opposes the term effect",
+    "application_type": "constant in the fit sample (Individual only); joint applications appear from 2015 and in the holdout: unseen by the model, route to review / monitor",
+    "emp_length": "replaced by emp_length_years (0-10, NaN = unknown)",
+    "purpose": "replaced by purpose_grp (levels < 100 loans in fit merged into 'other')",
+    "emp_title": "replaced by job_family (keyword rules, first match wins; 65.5% matched)",
+    "verification_status": "replaced by verification_grp: Verified and Source Verified merged (WoE -0.138 vs -0.118; IV 0.0458 -> 0.0457)",
+    "emp_length_years": "no predictive value on new data: 2015 AUC 0.5076 with 2013-14 WoE (rule: < 0.53 -> exclude); IV 0.012",
+    "job_family": "definition changed mid-sample: unmatched ('other') share 66-67% in 2013Q1-Q3, then 16-17% from 2013Q4 (emp_title appears to switch from employer names to job titles); blank share stable. PSI vs 2015 = 0.128 (understated, since the fit window mixes both eras). Also a fairness proxy risk and weak signal.",
+    "addr_state_clean": "location proxy risk (cannot be tested: no protected attributes in the data) with negligible predictive value: 2015 AUC with 2013-14 WoE 0.5116 (rule: < 0.53 -> exclude); chi-square across 16 big states p = 0.030 (differences detectable in 2013-14 but not useful for ranking new loans)"
+  },
+  "factors": [
+    {
+      "name": "debt_size",
+      "score_column": "factor_debt_size",
+      "method": "factor_analysis_promax (minres, 4 factors)",
+      "top_loadings": {
+        "tot_cur_bal_log": 0.955,
+        "tot_hi_cred_lim_log": 0.953,
+        "mort_acc": 0.752,
+        "annual_inc_log": 0.618
+      },
+      "variance_explained": 0.184
+    },
+    {
+      "name": "card_utilization",
+      "score_column": "factor_card_utilization",
+      "method": "factor_analysis_promax (minres, 4 factors)",
+      "top_loadings": {
+        "revol_util_cap": 0.936,
+        "bc_util_cap": 0.877,
+        "fico_mid": -0.562
+      },
+      "variance_explained": 0.132
+    },
+    {
+      "name": "card_size",
+      "score_column": "factor_card_size",
+      "method": "factor_analysis_promax (minres, 4 factors)",
+      "top_loadings": {
+        "total_rev_hi_lim_log": 0.941,
+        "revol_bal_log": 0.792,
+        "open_acc": 0.492
+      },
+      "variance_explained": 0.124
+    },
+    {
+      "name": "credit_seeking",
+      "score_column": "factor_credit_seeking",
+      "method": "factor_analysis_promax (minres, 4 factors)",
+      "top_loadings": {
+        "acc_open_past_24mths": 0.84,
+        "num_tl_op_past_12m": 0.73,
+        "open_acc": 0.476,
+        "total_acc": 0.43
+      },
+      "variance_explained": 0.118
+    }
+  ],
+  "factor_notes": "promax lets factors correlate, so per-factor variance shares overlap; factor score correlations (<= 2014): {'factor_debt_size': {'factor_debt_size': 1.0, 'factor_card_utilization': -0.17, 'factor_card_size': 0.56, 'factor_credit_seeking': 0.13}, 'factor_card_utilization': {'factor_debt_size': -0.17, 'factor_card_utilization': 1.0, 'factor_card_size': 0.03, 'factor_credit_seeking': -0.05}, 'factor_card_size': {'factor_debt_size': 0.56, 'factor_card_utilization': 0.03, 'factor_card_size': 1.0, 'factor_credit_seeking': 0.2}, 'factor_credit_seeking': {'factor_debt_size': 0.13, 'factor_card_utilization': -0.05, 'factor_card_size': 0.2, 'factor_credit_seeking': 1.0}}",
+  "pca": {
+    "inputs": [
+      "acc_open_past_24mths",
+      "annual_inc_log",
+      "avg_cur_bal_log",
+      "bc_util_cap",
+      "credit_hist_months",
+      "dti_cap",
+      "fico_mid",
+      "inq_last_6mths",
+      "loan_amnt",
+      "loan_to_income",
+      "mort_acc",
+      "num_tl_op_past_12m",
+      "open_acc",
+      "revol_bal_log",
+      "revol_util_cap",
+      "tot_cur_bal_log",
+      "tot_hi_cred_lim_log",
+      "total_acc",
+      "total_rev_hi_lim_log"
+    ],
+    "log1p_inputs": [
+      "inq_last_6mths",
+      "mort_acc",
+      "num_tl_op_past_12m",
+      "open_acc",
+      "credit_hist_months",
+      "acc_open_past_24mths"
+    ],
+    "variance_explained": [
+      0.272,
+      0.142,
+      0.115,
+      0.102
+    ],
+    "top_loadings": {
+      "pc1": {
+        "tot_hi_cred_lim_log": 0.91,
+        "tot_cur_bal_log": 0.881,
+        "avg_cur_bal_log": 0.748,
+        "mort_acc": 0.67,
+        "annual_inc_log": 0.666,
+        "total_rev_hi_lim_log": 0.656,
+        "total_acc": 0.611,
+        "open_acc": 0.56,
+        "revol_bal_log": 0.557,
+        "loan_amnt": 0.545,
+        "credit_hist_months": 0.419
+      },
+      "pc2": {
+        "revol_util_cap": 0.836,
+        "bc_util_cap": 0.768,
+        "acc_open_past_24mths": -0.549,
+        "num_tl_op_past_12m": -0.533,
+        "revol_bal_log": 0.404
+      },
+      "pc3": {
+        "dti_cap": 0.568,
+        "fico_mid": -0.547,
+        "acc_open_past_24mths": 0.537,
+        "num_tl_op_past_12m": 0.479,
+        "open_acc": 0.463,
+        "bc_util_cap": 0.423
+      },
+      "pc4": {
+        "loan_to_income": 0.7,
+        "total_rev_hi_lim_log": 0.524,
+        "loan_amnt": 0.471
+      }
+    }
+  },
+  "fa_inputs": [
+    "acc_open_past_24mths",
+    "annual_inc_log",
+    "bc_util_cap",
+    "credit_hist_months",
+    "dti_cap",
+    "fico_mid",
+    "inq_last_6mths",
+    "loan_amnt",
+    "mort_acc",
+    "num_tl_op_past_12m",
+    "open_acc",
+    "revol_bal_log",
+    "revol_util_cap",
+    "tot_cur_bal_log",
+    "tot_hi_cred_lim_log",
+    "total_acc",
+    "total_rev_hi_lim_log"
+  ],
+  "caps": {
+    "annual_inc": {
+      "method": "p99.5",
+      "upper": 300000.0,
+      "log1p": true
+    },
+    "revol_bal": {
+      "method": "p99.5",
+      "upper": 176560.99999999817,
+      "log1p": true
+    },
+    "tot_cur_bal": {
+      "method": "p99.5",
+      "upper": 755791.2399999986,
+      "log1p": true
+    },
+    "avg_cur_bal": {
+      "method": "p99.5",
+      "upper": 85141.51999999987,
+      "log1p": true
+    },
+    "tot_hi_cred_lim": {
+      "method": "p99.5",
+      "upper": 869472.4799999993,
+      "log1p": true
+    },
+    "total_rev_hi_lim": {
+      "method": "p99.5",
+      "upper": 184669.9999999997,
+      "log1p": true
+    },
+    "dti": {
+      "method": "iqr_fence",
+      "upper": 40.949999999999996,
+      "log1p": false
+    },
+    "revol_util": {
+      "method": "iqr_fence",
+      "upper": 125.0,
+      "log1p": false
+    },
+    "bc_util": {
+      "method": "iqr_fence",
+      "upper": 150.0,
+      "log1p": false
+    }
+  },
+  "imputation": {
+    "total_acc_edges": [
+      -Infinity,
+      16.0,
+      21.0,
+      27.0,
+      35.0,
+      Infinity
+    ],
+    "hist_months_by_group": [
+      139.0,
+      167.0,
+      183.0,
+      199.5,
+      210.0
+    ],
+    "bc_util_median": 69.4
+  },
+  "feature_caps": {
+    "loan_to_income": 0.46609333333333297
+  },
+  "category_groupings": {
+    "min_group_size": 100,
+    "purpose_keep": [
+      "car",
+      "credit_card",
+      "debt_consolidation",
+      "home_improvement",
+      "major_purchase",
+      "medical",
+      "other",
+      "small_business"
+    ],
+    "purpose_risk_levels_scorecard": {
+      "small_business": "high",
+      "debt_consolidation": "medium",
+      "other": "medium",
+      "medical": "medium",
+      "credit_card": "low",
+      "home_improvement": "low",
+      "major_purchase": "low",
+      "car": "low"
+    },
+    "verification_map": {
+      "Verified": "verified",
+      "Source Verified": "verified",
+      "Not Verified": "not_verified"
+    },
+    "unseen_level": "purpose -> 'other'; any WoE level -> 0 (neutral)"
+  },
+  "woe_bins": {
+    "acc_open_past_24mths": {
+      "type": "numeric",
+      "edges": [
+        2.0,
+        3.0,
+        5.0,
+        6.0
+      ],
+      "woe": {
+        "0": 0.35759519882346735,
+        "1": 0.11598425674602164,
+        "2": -0.022700729288656823,
+        "3": -0.1811100657740026,
+        "4": -0.40873738868720205
+      },
+      "iv": 0.07483208717758508
+    },
+    "annual_inc_log": {
+      "type": "numeric",
+      "edges": [
+        10.645448706505872,
+        10.933124826700707,
+        11.184435286790631,
+        11.48247656671073
+      ],
+      "woe": {
+        "0": -0.2638232433636574,
+        "1": -0.055215179775491556,
+        "2": -0.010309081234510787,
+        "3": 0.08015976844980736,
+        "4": 0.31679041559148596
+      },
+      "iv": 0.03534998511915351
+    },
+    "avg_cur_bal_log": {
+      "type": "numeric",
+      "edges": [
+        7.848309244702387,
+        8.53070154144103,
+        9.36434818445553,
+        10.005953859638081
+      ],
+      "woe": {
+        "0": -0.15815658141559857,
+        "1": -0.18439649398329708,
+        "2": -0.06750486770541118,
+        "3": 0.10163893430886302,
+        "4": 0.3780420078011514
+      },
+      "iv": 0.04058211431630089
+    },
+    "bc_util_cap": {
+      "type": "numeric",
+      "edges": [
+        41.1,
+        61.6,
+        76.8,
+        90.9
+      ],
+      "woe": {
+        "0": 0.27354618749265697,
+        "1": 0.1674127238134222,
+        "2": -0.04198185518630838,
+        "3": -0.07930474884401457,
+        "4": -0.26309959852025017
+      },
+      "iv": 0.035660511669492176
+    },
+    "bc_util_missing": {
+      "type": "categorical",
+      "woe": {
+        "0": 0.0031006324724411017,
+        "1": -0.26627067406892696
+      },
+      "iv": 0.0008255507663009348
+    },
+    "credit_hist_months": {
+      "type": "numeric",
+      "edges": [
+        126.97109067017082,
+        162.01708278580816,
+        199.01445466491458,
+        259.9211563731931
+      ],
+      "woe": {
+        "0": -0.11157501034111411,
+        "1": -0.10668683039062883,
+        "2": -0.012508528029176146,
+        "3": 0.08473280710695466,
+        "4": 0.16523223172407017
+      },
+      "iv": 0.011531678799268691
+    },
+    "delinq_2yrs": {
+      "type": "numeric",
+      "edges": [],
+      "woe": {
+        "0": 0.0
+      },
+      "iv": 0.0
+    },
+    "dti_cap": {
+      "type": "numeric",
+      "edges": [
+        10.49,
+        15.01,
+        19.54,
+        24.92
+      ],
+      "woe": {
+        "0": 0.37012900904382606,
+        "1": 0.21076910475636823,
+        "2": 0.022897029474663638,
+        "3": -0.1813562232966896,
+        "4": -0.32035218451767966
+      },
+      "iv": 0.062292010304035424
+    },
+    "ever_delinq": {
+      "type": "categorical",
+      "woe": {
+        "0": 0.040550999512725165,
+        "1": -0.03421587789345242
+      },
+      "iv": 0.001387327643224486
+    },
+    "fico_mid": {
+      "type": "numeric",
+      "edges": [
+        672.0,
+        682.0,
+        697.0,
+        717.0
+      ],
+      "woe": {
+        "0": -0.3169706179649889,
+        "1": -0.14294413118239474,
+        "2": 0.012668313815512314,
+        "3": 0.1546766040179228,
+        "4": 0.6689655741771033
+      },
+      "iv": 0.09899983894566383
+    },
+    "home_ownership": {
+      "type": "categorical",
+      "woe": {
+        "MORTGAGE": 0.13883591217670357,
+        "OWN": 0.010855689653373352,
+        "RENT": -0.16982354739843125
+      },
+      "iv": 0.021280734210584174
+    },
+    "inq_last_6mths": {
+      "type": "categorical",
+      "woe": {
+        "0.0": 0.17114329175067178,
+        "1.0": -0.12212971048408808,
+        "2.0": -0.20089474598773002,
+        "3.0": -0.23612268297755443,
+        "4.0": -0.3529533339897118,
+        "5.0": -0.3993435452396305,
+        "6.0": -0.8963808518657652
+      },
+      "iv": 0.03270155057365281
+    },
+    "loan_amnt": {
+      "type": "numeric",
+      "edges": [
+        7200.0,
+        10800.0,
+        15000.0,
+        21000.0
+      ],
+      "woe": {
+        "0": 0.2420645690140554,
+        "1": 0.03737249324459844,
+        "2": -0.033227739817004796,
+        "3": -0.032832612578826255,
+        "4": -0.18974249759630213
+      },
+      "iv": 0.019283071324803298
+    },
+    "loan_to_income": {
+      "type": "numeric",
+      "edges": [
+        0.11764705882352941,
+        0.17777777777777778,
+        0.24,
+        0.3258832916315718
+      ],
+      "woe": {
+        "0": 0.4763537494929178,
+        "1": 0.23343357883772128,
+        "2": 0.08182944546563875,
+        "3": -0.2358614842628982,
+        "4": -0.3965308733439106
+      },
+      "iv": 0.09770482985609281
+    },
+    "mort_acc": {
+      "type": "numeric",
+      "edges": [
+        1.0,
+        2.0,
+        4.0
+      ],
+      "woe": {
+        "0": -0.1160603416118646,
+        "1": 0.08212056549902208,
+        "2": 0.1559904820502712,
+        "3": 0.2346499845144301
+      },
+      "iv": 0.019231763194641784
+    },
+    "mths_since_last_delinq": {
+      "type": "numeric",
+      "edges": [
+        8.0,
+        20.0,
+        34.0,
+        53.0
+      ],
+      "woe": {
+        "0": -0.05318766902839575,
+        "1": -0.03548714958622001,
+        "2": 0.0012475977396632061,
+        "3": 0.05453219875661926,
+        "4": 0.03830768729688985
+      },
+      "iv": 0.0017277163475598563
+    },
+    "num_tl_op_past_12m": {
+      "type": "numeric",
+      "edges": [
+        1.0,
+        2.0,
+        3.0
+      ],
+      "woe": {
+        "0": 0.24270661967148985,
+        "1": -0.0475675082473332,
+        "2": -0.186627109988751,
+        "3": -0.33505539909941384
+      },
+      "iv": 0.04935608713393379
+    },
+    "open_acc": {
+      "type": "numeric",
+      "edges": [
+        7.0,
+        10.0,
+        12.0,
+        15.0
+      ],
+      "woe": {
+        "0": 0.17022128976439857,
+        "1": -0.05375448331878974,
+        "2": -0.0225176654027405,
+        "3": 0.03951374372731303,
+        "4": -0.11335172491284258
+      },
+      "iv": 0.009366537701735178
+    },
+    "pub_rec": {
+      "type": "categorical",
+      "woe": {
+        "0.0": 0.010127203153846789,
+        "1.0": -0.036484621632404214,
+        "10.0": 0.04220764694326082,
+        "2.0": -0.15956104478621558,
+        "3.0": -0.14884758981944857,
+        "4.0": -0.21730354854182382,
+        "5.0": 0.1673707898972667,
+        "6.0": -0.46861797682273,
+        "7.0": 0.04220764694326082
+      },
+      "iv": 0.0009353010993083734
+    },
+    "pub_rec_bankruptcies": {
+      "type": "categorical",
+      "woe": {
+        "0.0": 0.0032916355754820446,
+        "1.0": -0.005710497801504941,
+        "2.0": -0.2685851571239009,
+        "3.0": -0.6295985026612315,
+        "4.0": -0.4692558525860523
+      },
+      "iv": 0.0009266963476170308
+    },
+    "purpose_grp": {
+      "type": "categorical",
+      "mapping": {
+        "small_business": "high",
+        "debt_consolidation": "medium",
+        "other": "medium",
+        "medical": "medium",
+        "credit_card": "low",
+        "home_improvement": "low",
+        "major_purchase": "low",
+        "car": "low"
+      },
+      "woe": {
+        "high": -0.737839010188865,
+        "low": 0.1863007621685279,
+        "medium": -0.06837916915989403
+      },
+      "iv": 0.020217923672392762
+    },
+    "revol_bal_log": {
+      "type": "numeric",
+      "edges": [
+        8.6333393173165,
+        9.18574025510795,
+        9.603773380582835,
+        10.07613746839192
+      ],
+      "woe": {
+        "0": -0.039270002033434205,
+        "1": -0.003238381980473113,
+        "2": 0.006094820113216985,
+        "3": -0.049162327089538875,
+        "4": 0.08948058704493793
+      },
+      "iv": 0.002368028896770162
+    },
+    "revol_util_cap": {
+      "type": "numeric",
+      "edges": [
+        36.0,
+        50.7,
+        63.42000000000025,
+        77.9
+      ],
+      "woe": {
+        "0": 0.23300716138190244,
+        "1": 0.12777828770279331,
+        "2": 0.008759519139079588,
+        "3": -0.1503451260698411,
+        "4": -0.17960721116223036
+      },
+      "iv": 0.02481414100381622
+    },
+    "term_months": {
+      "type": "categorical",
+      "woe": {
+        "36": 0.31138317047770997,
+        "60": -0.6372927631987703
+      },
+      "iv": 0.19522999991206358
+    },
+    "tot_cur_bal_log": {
+      "type": "numeric",
+      "edges": [
+        10.049724141028015,
+        10.810660834838997,
+        11.801068430830002,
+        12.39498576251171
+      ],
+      "woe": {
+        "0": -0.04873841864741298,
+        "1": -0.22978879592571427,
+        "2": -0.11573283071449189,
+        "3": 0.15789412936759348,
+        "4": 0.29483715680059874
+      },
+      "iv": 0.03511167432127739
+    },
+    "tot_hi_cred_lim_log": {
+      "type": "numeric",
+      "edges": [
+        10.586801539185911,
+        11.208311520643242,
+        11.99635604762729,
+        12.554176965035202
+      ],
+      "woe": {
+        "0": -0.1515309549613346,
+        "1": -0.16518892423271248,
+        "2": -0.06750486770541118,
+        "3": 0.08906650836407307,
+        "4": 0.3559721465141202
+      },
+      "iv": 0.03553793194771654
+    },
+    "total_acc": {
+      "type": "numeric",
+      "edges": [
+        16.0,
+        21.0,
+        27.0,
+        35.0
+      ],
+      "woe": {
+        "0": -0.03350102674374001,
+        "1": 0.04920521748550358,
+        "2": -0.040124005820086774,
+        "3": 0.07376912143406336,
+        "4": -0.03459917068327972
+      },
+      "iv": 0.002303857755974573
+    },
+    "total_rev_hi_lim_log": {
+      "type": "numeric",
+      "edges": [
+        9.38437770918244,
+        9.83097062169695,
+        10.221977646629885,
+        10.657282884047461
+      ],
+      "woe": {
+        "0": -0.13737370435024193,
+        "1": -0.10138716686255878,
+        "2": 0.004490343211428546,
+        "3": -0.009670945589891953,
+        "4": 0.2806574241027984
+      },
+      "iv": 0.020399394430297063
+    },
+    "verification_grp": {
+      "type": "categorical",
+      "woe": {
+        "not_verified": 0.35784762161950234,
+        "verified": -0.12811441429807652
+      },
+      "iv": 0.04567123958281407
+    },
+    "factor_debt_size": {
+      "type": "numeric",
+      "edges": [
+        -0.8932585809192514,
+        -0.30645395084853955,
+        0.33997527981860404,
+        0.902322343053546
+      ],
+      "woe": {
+        "0": -0.23567569531750343,
+        "1": -0.16079210693967705,
+        "2": -0.0581497311690897,
+        "3": 0.1963657328309426,
+        "4": 0.33425936536234163
+      },
+      "iv": 0.045312582521893595
+    },
+    "factor_card_utilization": {
+      "type": "numeric",
+      "edges": [
+        -0.8037623471075304,
+        -0.15704229862626598,
+        0.3556632994769871,
+        0.8657380478898999
+      ],
+      "woe": {
+        "0": 0.41674871426102905,
+        "1": 0.21600054348034742,
+        "2": -0.010512519382461335,
+        "3": -0.1826603824361207,
+        "4": -0.323912855539689
+      },
+      "iv": 0.0692144348274725
+    },
+    "factor_card_size": {
+      "type": "numeric",
+      "edges": [
+        -0.7863243001725161,
+        -0.19139751605386707,
+        0.2782961444836887,
+        0.8130896688369239
+      ],
+      "woe": {
+        "0": -0.003238381980473113,
+        "1": -0.051520651886073555,
+        "2": -0.017752322928696017,
+        "3": 0.03324506129390683,
+        "4": 0.04115258302203107
+      },
+      "iv": 0.0011580603550185426
+    },
+    "factor_credit_seeking": {
+      "type": "numeric",
+      "edges": [
+        -0.7581183875746522,
+        -0.18304342489418743,
+        0.28745362098486515,
+        0.7826657926018631
+      ],
+      "woe": {
+        "0": 0.41674871426102905,
+        "1": 0.16332691629084178,
+        "2": 0.021262401137952764,
+        "3": -0.13862982614204822,
+        "4": -0.3517263344871173
+      },
+      "iv": 0.06699231986848328
+    }
+  }
+}
