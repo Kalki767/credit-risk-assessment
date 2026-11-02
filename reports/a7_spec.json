@@ -465,7 +465,44 @@
       "factor_card_size": 0.005,
       "factor_credit_seeking": 0.019
     },
-    "note": "All features stable (PSI < 0.10) except job_family (0.128). PSI tracks the bulk; tail growth in revol_bal / total_rev_hi_lim (A3 cap counts) is not visible in PSI."
+    "note": "All features stable (PSI < 0.10) except job_family (0.128). PSI tracks the bulk; tail growth in revol_bal / total_rev_hi_lim (A3 cap counts) is not visible in PSI.",
+    "psi_2013_vs_2014": {
+      "acc_open_past_24mths": 0.028,
+      "annual_inc_log": 0.005,
+      "avg_cur_bal_log": 0.006,
+      "bc_util_cap": 0.007,
+      "bc_util_missing": 0.0,
+      "credit_hist_months": 0.014,
+      "delinq_2yrs": 0.016,
+      "dti_cap": 0.018,
+      "ever_delinq": 0.018,
+      "fico_mid": 0.038,
+      "home_ownership": 0.004,
+      "inq_last_6mths": 0.007,
+      "loan_amnt": 0.016,
+      "loan_to_income": 0.003,
+      "mort_acc": 0.002,
+      "mths_since_last_delinq": 0.02,
+      "num_tl_op_past_12m": 0.022,
+      "open_acc": 0.013,
+      "pub_rec": 0.043,
+      "pub_rec_bankruptcies": 0.02,
+      "purpose_grp": 0.004,
+      "revol_bal_log": 0.029,
+      "revol_util_cap": 0.024,
+      "term_months": 0.001,
+      "tot_cur_bal_log": 0.003,
+      "tot_hi_cred_lim_log": 0.002,
+      "total_acc": 0.011,
+      "total_rev_hi_lim_log": 0.015,
+      "verification_grp": 0.001,
+      "factor_debt_size": 0.002,
+      "factor_card_utilization": 0.011,
+      "factor_card_size": 0.014,
+      "factor_credit_seeking": 0.048,
+      "job_family": 0.852
+    },
+    "note_2013_vs_2014": "All model features and factor scores stable (max 0.048, credit-seeking). job_family 0.852 (definition change in 2013Q4; already excluded)."
   },
   "factors_vs_grade": {
     "spearman_with_grade": {
@@ -493,6 +530,28 @@
       "factor_card_utilization": 0.3,
       "factor_card_size": 0.043,
       "factor_credit_seeking": 0.377
+    }
+  },
+  "factor_deciles": {
+    "factor_debt_size": {
+      "chi2_p": 0.0,
+      "rate_decile_1": 0.193,
+      "rate_decile_10": 0.122
+    },
+    "factor_card_utilization": {
+      "chi2_p": 0.0,
+      "rate_decile_1": 0.104,
+      "rate_decile_10": 0.241
+    },
+    "factor_card_size": {
+      "chi2_p": 0.8996,
+      "rate_decile_1": 0.17,
+      "rate_decile_10": 0.163
+    },
+    "factor_credit_seeking": {
+      "chi2_p": 0.0,
+      "rate_decile_1": 0.103,
+      "rate_decile_10": 0.241
     }
   }
 }

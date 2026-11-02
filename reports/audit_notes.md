@@ -217,3 +217,8 @@ Saved: reports/a6_spec.json, data/interim/a6_factor_model.joblib, data/interim/t
 - The model is valid only inside the policy range; out-of-range applicants → manual review.
 
 Final input list: 29 features, nothing pending. Saved: reports/a7_spec.json.
+
+### Additions after re-reading the brief
+- **A4**: installment ≤ 40% of monthly income for all loans (median 7.7%); implied dti debt vs card balance Spearman 0.521; 124 loans (0.86%) inconsistent with no risk signal. dti cannot reveal inflated income (computed from it).
+- **A6**: Spearman matrix confirms the Pearson blocks. VIF: tot_cur_bal 212, avg_cur_bal 168.5, tot_hi_cred_lim 25, open_acc 24.6, loan/income trio 6.6–8.0; after removing avg_cur_bal and loan_to_income only tot_cur_bal ↔ tot_hi_cred_lim stays severe (21.8 / 25.0). Untreated PCA has the same components (similarity 0.99 / 0.92 / 0.90) but PC1 explains less (23.2% vs 27.2%) and income loads 0.43 vs 0.67; the max untreated |z| is 96.5 ($7.5M income).
+- **A7**: PSI 2013 vs 2014: all model features stable (max 0.048), job_family 0.852. Factor deciles (95% CI, chi-square): utilization 10.4% → 24.1% (p = 8e-30), credit-seeking 10.3% → 24.1% (p = 2e-27), debt size ~22% → 12.2% (p = 2e-19), card size flat (p = 0.90). Chart: reports/a7_factor_deciles.png.
