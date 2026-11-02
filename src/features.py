@@ -1,6 +1,7 @@
 """A3-A5 feature rules: fit numbers on loans issued <= the fit cutoff, apply them unchanged to any rows."""
 import numpy as np
 import pandas as pd
+from .cleaning import clean
 
 FIT_CUTOFF = pd.Timestamp("2014-12-31")
 MIN_GROUP = 100                                              # A5: smallest category kept on its own
@@ -133,3 +134,78 @@ def apply_latent(df, models):
     out[PCA_SCORE_COLS] = models["pca"].transform(Z)
     out[FACTOR_SCORE_COLS] = models["fa"].transform(Z[FA_COLS])
     return out
+# ---------- WoE bins for the scorecard (fitted on <= cutoff rows) ----------
+TARGET = "defaulted"
+N_WOE_BINS = 5
+CONTRACT_VERSION = "1.0.0"
+
+
+def woe_groups(s, rule):
+    """Assign each value to its WoE bin label: '0'..'4' for numeric bins, the level for categories, 'missing'."""
+    if rule["type"] == "numeric":
+        edges = [-np.inf] + rule["edges"] + [np.inf]
+        codes = pd.Series(pd.cut(s, edges, labels=False), index=s.index).astype("Int64")
+        return codes.astype(str).replace("<NA>", "missing")
+    groups = s.astype(str).where(s.notna(), "missing")
+    if "mapping" in rule:
+        groups = groups.map(rule["mapping"]).fillna(groups)
+    return groups
+
+
+def fit_woe(df, cols, target=TARGET, n_bins=N_WOE_BINS):
+    """Learn bins and their WoE (ln(%good / %bad), +0.5 smoothing) for each column."""
+    bins = {}
+    for c in cols:
+        s = df[c]
+        if pd.api.types.is_numeric_dtype(s) and s.nunique() > 12:
+            _, edges = pd.qcut(s.dropna(), n_bins, retbins=True, duplicates="drop")
+            rule = {"type": "numeric", "edges": [float(e) for e in edges[1:-1]]}     # inner edges only
+        else:
+            rule = {"type": "categorical"}
+            if c == "purpose_grp":
+                rule["mapping"] = PURPOSE_RISK
+        t = pd.crosstab(woe_groups(s, rule), df[target])
+        good, bad = t[0] + 0.5, t[1] + 0.5
+        pg, pb = good / good.sum(), bad / bad.sum()
+        woe = np.log(pg / pb)
+        rule["woe"] = {str(k): float(v) for k, v in woe.items()}
+        rule["iv"] = float(((pg - pb) * woe).sum())
+        bins[c] = rule
+    return bins
+
+
+def apply_woe(df, bins):
+    """Replace each column by its bin's WoE; unseen levels get 0 (neutral)."""
+    out = pd.DataFrame(index=df.index)
+    for c, rule in bins.items():
+        out[f"woe_{c}"] = woe_groups(df[c], rule).map(rule["woe"]).fillna(0.0).astype(float)
+    return out
+
+
+# ---------- the whole contract transform in one object ----------
+class CreditRiskTransform:
+    """Raw application + bureau rows -> cleaned fields -> features -> PCA and factor scores (+ WoE).
+
+    fit() learns every number on loans issued <= fit_cutoff only; transform() never re-learns anything.
+    """
+    contract_version = CONTRACT_VERSION
+
+    def __init__(self, fit_cutoff=FIT_CUTOFF):
+        self.fit_cutoff = pd.Timestamp(fit_cutoff)
+
+    def fit(self, raw_df):
+        cleaned = clean(raw_df)
+        fit_rows = cleaned[cleaned["issue_dt"] <= self.fit_cutoff]
+        self.params_ = fit_basic(fit_rows)
+        basic = apply_basic(fit_rows, self.params_)
+        self.models_ = fit_latent(basic)
+        latent = apply_latent(basic, self.models_)
+        self.woe_bins_ = fit_woe(latent, MODEL_FEATURES + FACTOR_SCORE_COLS)
+        self.n_fit_rows_ = len(fit_rows)
+        return self
+
+    def transform(self, raw_df):
+        return apply_latent(apply_basic(clean(raw_df), self.params_), self.models_)
+
+    def woe(self, transformed_df):
+        return apply_woe(transformed_df, self.woe_bins_)
