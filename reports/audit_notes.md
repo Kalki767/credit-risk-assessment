@@ -107,3 +107,39 @@
 ### Derived features
 - Kept: fico_mid (replaces the FICO pair) and loan_to_income (AUC 0.591, beats loan_amnt 0.538, income 0.552 and FICO 0.586).
 - Rejected with evidence: installment_to_income (carries int_rate), principal_per_year_to_income (AUC 0.532; long-term risk is selection, not yearly burden), revol_bal_zero (redundant, 0.3%).
+
+## A5: Categorical fields, WoE and IV (fit sample: loans issued ≤ 2014)
+
+### Level review
+- Every categorical field profiled (loans, share, default rate per level).
+- application_type is constant in the fit sample (Individual only) → excluded. Joint applications (2015+, 96 in the holdout) are unseen by the model → monitoring / manual review.
+
+### Transformations
+- **purpose** → purpose_grp: levels with < 100 loans merged into "other" (moving, vacation, house, wedding, renewable_energy); unseen purposes also → "other". 8 groups.
+- **emp_length** → emp_length_years (0–10, NaN = unknown).
+- **emp_title** → job_family:
+  - 10 families by ordered keyword rules (first match wins), stored in the spec
+  - 15 test titles pass
+  - 65.5% matched; the rest are one-off titles or employer names
+- **verification_status** → verification_grp: Verified + Source Verified merged (WoE −0.138 vs −0.118; IV 0.0458 → 0.0457).
+- **home_ownership** kept as 3 levels (RENT −0.170, OWN 0.011, MORTGAGE 0.139; all ≥ 1,406 loans; no new levels in 2015).
+
+### WoE / IV
+- 10 equal-count bins for numeric fields, missing as its own bin, +0.5 smoothing.
+- sub_grade 0.503 / grade 0.454 / int_rate 0.451: the old model (confirms exclusion, benchmark).
+- Honest features at most medium: term 0.195, fico_mid 0.108, loan_to_income 0.101.
+- Delinquency and public-record fields are useless (≤ 0.004), likely due to accepted-only selection (A7).
+
+### Purpose risk levels (scorecard coarse classing)
+- high / medium / low.
+- Within-level chi-square p = 0.855 / 0.942; between p = 4e-10.
+- Out-of-time AUC (WoE learned 2013–14, applied to 2015): 0.5415 vs 0.5443 for 8 groups, within the 0.005 rule set in advance.
+- Monitor medical (20.0% → 29.5%).
+
+### Employment fields, out-of-time test (rule: AUC < 0.53 → exclude)
+- emp_length_years 0.5076 → excluded.
+- job_family 0.5438 despite IV 0.014 ("useless" by rule of thumb) → kept under fairness review: stays only if it adds ≥ 0.005 validation AUC in the Part B ablation; excluded from the scorecard.
+
+### Rules
+- An unseen category level gets WoE 0 (neutral).
+- Features: 30. Pending: addr_state_clean (A7). Saved in reports/a5_spec.json.
