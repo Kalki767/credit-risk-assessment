@@ -1,0 +1,19 @@
+# Every setting for training and evaluation. Paths are relative to the project root.
+paths:
+  contract_dir: contract
+  models_dir: models
+  reports_dir: reports
+  experiment_log: experiments/log.csv
+
+data:
+  target: defaulted
+  fit_cutoff: "2014-12-31"            # train on loans issued up to here (same as the contract)
+  valid_start: "2015-01-01"           # validation = loans issued in 2015
+  valid_end: "2015-12-31"
+  cv_quarters: ["2014Q1", "2014Q2", "2014Q3", "2014Q4"]   # expanding-window validation quarters
+
+seed: 42
+
+economics:                            # from the brief
+  gain_if_repaid: 0.10                # a repaid loan earns 10% of loan_amnt
+  loss_if_default: 0.70               # a defaulted loan loses 70% of loan_amnt
