@@ -16,17 +16,28 @@ Predict each applicant's **probability of default (PD)** at application time, us
 | Validation | 2015 (15,627) | final evaluation, used once |
 | Holdout | 2016 (5,000, no label) | PD scores and drift (PSI) |
 
-**Tuning: expanding-window cross-validation by quarter** inside 2013–14. Each fold trains on all quarters before a validation quarter (2014 Q1, Q2, Q3, Q4), so a model is never validated on loans older than its training data. Hyperparameters are chosen on the average fold result; the calibrator is fitted on the out-of-fold predictions; the final model is refitted on all of 2013–14. A random split is not used, because it would let later loans inform predictions about earlier ones.
+**Tuning: expanding-window cross-validation by quarter** inside 2013–14. Each fold trains on every quarter before its validation quarter, so a model is never validated on loans older than its training data:
+
+| Fold | Train | Train loans | Validate | Validation loans |
+| --- | --- | --- | --- | --- |
+| 1 | 2013 Q1–Q4 | 5,349 | 2014 Q1 | 1,906 |
+| 2 | 2013 Q1 – 2014 Q1 | 7,255 | 2014 Q2 | 2,091 |
+| 3 | 2013 Q1 – 2014 Q2 | 9,346 | 2014 Q3 | 2,336 |
+| 4 | 2013 Q1 – 2014 Q3 | 11,682 | 2014 Q4 | 2,691 |
+
+2013 is used for training in every fold. Validation starts in 2014 so every fold trains on at least a full year; validating on 2013 Q2 or Q3 would mean training on only 893 or 2,139 loans, giving noisy, pessimistic scores. Hyperparameters are chosen on the average fold AUC; the calibrator is fitted on the out-of-fold predictions; the final model is refitted on all of 2013–14. A random split is not used, because it would let later loans inform predictions about earlier ones.
 
 **Caveat:** 2014–2015 60-month labels are biased toward early defaults (loans still in progress, see findings A2). Results are also reported by term and by quarter.
 
-## Metrics
+## Metrics, in priority order
 
-- **Ranking:** ROC-AUC, Gini, KS.
-- **Probabilities:** calibration plot and Brier score (PDs are compared with 12.5%).
-- **Business:** expected profit, approval rate and default rate among approved at the chosen thresholds.
-- **Stability:** AUC and calibration by quarter; PSI of PD and top inputs on the holdout.
-- **Benchmark:** grade alone (2015 AUC 0.703). Accuracy is not used: with ~17% defaults, approving everyone is 83% "accurate".
+| Priority | Question | Metric | Used for |
+| --- | --- | --- | --- |
+| 1 | Does it rank borrowers correctly? | ROC-AUC (Gini = 2·AUC − 1) | tuning hyperparameters; choosing the model |
+| 2 | Are its probabilities honest? | calibration plot, Brier score | choosing the calibration method; makes the 12.5% threshold meaningful |
+| 3 | Does it make money? | expected profit, approval rate, default rate among approved | setting the thresholds |
+
+Ranking comes first because calibration can be corrected afterwards, while poor ranking cannot. Also reported: **KS** (the industry's traditional separation measure), **AUC and calibration by quarter** (stability), **grade alone** as the benchmark to beat (2015 AUC 0.703), and PSI of PD and top inputs on the holdout. Accuracy is not used: with ~17% defaults, approving everyone is 83% "accurate".
 
 ## Models
 
@@ -55,9 +66,9 @@ Predict each applicant's **probability of default (PD)** at application time, us
 - **Latency under 100 ms per application:** measured as p50 / p95 over the full path (validation, transform, model).
 - **Reproducible:** settings in a config file, fixed random seeds, every experiment logged to a CSV. The saved model carries its git commit, training-data hash, training date, contract version and thresholds. Inputs are validated against `data_spec.json` after cleaning (fail fast); a model with a different contract version is refused.
 
-## Production (beyond this assessment)
+## Production (out of scope; required summary)
 
-Serve `predict.py` behind an API. Monitor weekly PSI of inputs and PD, approval and review rates, and realized defaults as loans mature. Retrain when PSI exceeds 0.25, performance drops, or yearly, with a refreshed contract. Approve a small controlled sample of borderline applicants to learn about the population the old policy declined.
+Serve `predict.py` behind an API; monitor PSI of inputs and PD plus realized defaults as loans mature; retrain on a refreshed contract when PSI exceeds 0.25 or performance drops.
 
 ## Priorities
 
