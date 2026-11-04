@@ -1,0 +1,92 @@
+{
+  "model_version": "1.0.0",
+  "model_type": "WoE scorecard (logistic regression on contract WoE) + Platt recalibration + 3 decision bands",
+  "training_date": "2026-11-04T14:40:32+00:00",
+  "git_commit": "156821e63e20549a0aad14b04c1f70a2b7628b73",
+  "git_dirty": false,
+  "data_hash_sha256": "9cc2f55230d135674a2a04fda1a87555260b58d752da1210759dd766bb397df3",
+  "contract_version": "1.0.0",
+  "fit_cutoff": "2014-12-31",
+  "train_rows": 14373,
+  "valid_rows": 15627,
+  "valid_window": [
+    "2015-01-01",
+    "2015-12-31"
+  ],
+  "seed": 42,
+  "features": [
+    "term_months",
+    "fico_mid",
+    "loan_to_income",
+    "acc_open_past_24mths",
+    "dti_cap",
+    "num_tl_op_past_12m",
+    "verification_grp",
+    "avg_cur_bal_log",
+    "bc_util_cap",
+    "annual_inc_log",
+    "inq_last_6mths",
+    "home_ownership",
+    "total_rev_hi_lim_log",
+    "purpose_grp"
+  ],
+  "C": 1.0,
+  "coefficients": {
+    "term_months": -0.9443965203759774,
+    "fico_mid": -0.6272953432988292,
+    "loan_to_income": -0.43907439640893686,
+    "acc_open_past_24mths": -0.712974453539818,
+    "dti_cap": -0.4080764913358779,
+    "num_tl_op_past_12m": -0.3642467063446647,
+    "verification_grp": -0.28117936892160994,
+    "avg_cur_bal_log": -0.4791119045481862,
+    "bc_util_cap": -0.6374237530700918,
+    "annual_inc_log": -0.6274392644889633,
+    "inq_last_6mths": -0.7565994473600889,
+    "home_ownership": -0.6960377218683779,
+    "total_rev_hi_lim_log": -0.502048890225062,
+    "purpose_grp": -0.8131929399207333
+  },
+  "intercept": -1.5710964122257918,
+  "recalibration": {
+    "slope": 1.0794920828746009,
+    "intercept": 0.32668547207856674,
+    "fitted_on": "validation year, after evaluation (production refresh)"
+  },
+  "thresholds": {
+    "auto_approve_below": 0.11284404043230112,
+    "auto_decline_from": 0.13765309362728215,
+    "break_even_pd": 0.12500000000000003,
+    "review_share": 0.1
+  },
+  "evaluation_thresholds": {
+    "cutoff": 0.135,
+    "auto_approve_below": 0.12384649962816958,
+    "auto_decline_from": 0.14683243372689,
+    "chosen_on": "2014 out-of-fold PDs"
+  },
+  "metrics": {
+    "cv_auc_mean": 0.6974927089870328,
+    "cv_auc_by_quarter": {
+      "2014Q1": 0.69008161577286,
+      "2014Q2": 0.6726756906060104,
+      "2014Q3": 0.7112851315110083,
+      "2014Q4": 0.7159283980582525
+    },
+    "validation": {
+      "auc": 0.7124658723027181,
+      "gini": 0.42493174460543615,
+      "ks": 0.30927561118119073,
+      "brier": 0.14574064407922582,
+      "mean_pd": 0.17145482301396875,
+      "default_rate": 0.2008702886030588
+    },
+    "validation_grade_auc": 0.7025550135010783,
+    "validation_auto_approve_eval_bands": {
+      "approval_rate": 0.4026364625327958,
+      "default_rate_approved": 0.09663064208518754,
+      "profit_M": 1.5082075,
+      "return_on_approved": 0.016754124010672063
+    }
+  }
+}
