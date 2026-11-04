@@ -17,3 +17,19 @@ seed: 42
 economics:                            # from the brief
   gain_if_repaid: 0.10                # a repaid loan earns 10% of loan_amnt
   loss_if_default: 0.70               # a defaulted loan loses 70% of loan_amnt
+
+model:
+  version: "1.0.0"
+  features: [term_months, fico_mid, loan_to_income, acc_open_past_24mths, dti_cap, num_tl_op_past_12m,
+             verification_grp, avg_cur_bal_log, bc_util_cap, annual_inc_log, inq_last_6mths,
+             home_ownership, total_rev_hi_lim_log, purpose_grp]
+  C: 1.0
+
+policy:
+  cutoff_grid: [0.03, 0.40, 0.005]     # start, stop, step for the profit search
+  review_share: 0.10                   # assumption: manual review handles about 10% of applications
+  recalibrate_on_validation: true      # production refresh (B17)
+
+forbidden_columns: [total_pymnt, total_rec_prncp, total_rec_int, recoveries, last_pymnt_d, last_pymnt_amnt,
+                    last_credit_pull_d, last_fico_range_high, last_fico_range_low, debt_settlement_flag,
+                    bureau_recovery_flag, loan_status]
