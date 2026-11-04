@@ -97,15 +97,22 @@ def predict(application):
         raise ValueError("invalid application:\n- " + "\n- ".join(problems))
     woe = tf.woe(clean)
     p = float(model.predict_pd(woe)[0])
-    decision = str(model.decide([p])[0])
+    band = str(model.decide([p])[0])
     triggers = review_triggers(clean.iloc[0])
-    if decision == "auto-approve" and triggers:
-        decision = "review"
+    decision = "review" if band == "auto-approve" and triggers else band
+    if decision != band:
+        basis = f"PD is below the approval line, but sent to review by: {', '.join(triggers)}"
+    elif band == "review":
+        basis = f"PD is in the review band ({model.t1:.1%} to {model.t2:.1%}), the uncertain zone around break-even"
+    elif band == "auto-approve":
+        basis = f"PD is below the approval line ({model.t1:.1%})"
+    else:
+        basis = f"PD is at or above the decline line ({model.t2:.1%})"
     reasons, detail, pd_floor = reason_codes(model, tf, woe.iloc[0])
     meaning = (f"Approved. These factors raise the PD above the lowest possible ({pd_floor:.1%}), "
                f"but not above the approval line." if decision == "auto-approve"
                else "Main factors behind the higher risk, largest first.")
-    return {"pd": round(p, 4), "decision": decision, "model_version": meta["model_version"],
+    return {"pd": round(p, 4), "decision": decision,"decision_basis": basis, "model_version": meta["model_version"],
             "reason_codes": reasons, "reason_codes_meaning": meaning,
             "pd_lowest_possible": round(pd_floor, 4), "review_triggers": triggers, "reason_detail": detail,
             "metadata": {"training_date": meta["training_date"], "git_commit": meta["git_commit"],
