@@ -4,6 +4,7 @@ paths:
   models_dir: models
   reports_dir: reports
   experiment_log: experiments/log.csv
+  holdout_raw: data/raw/holdout_applications.csv
 
 data:
   target: defaulted
@@ -33,3 +34,4 @@ policy:
 forbidden_columns: [total_pymnt, total_rec_prncp, total_rec_int, recoveries, last_pymnt_d, last_pymnt_amnt,
                     last_credit_pull_d, last_fico_range_high, last_fico_range_low, debt_settlement_flag,
                     bureau_recovery_flag, loan_status]
+
