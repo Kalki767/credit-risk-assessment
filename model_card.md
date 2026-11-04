@@ -44,7 +44,7 @@ Predicts the probability of default (PD) of an unsecured personal loan at applic
 - **Alerts:** PSI ≥ 0.10 investigate, ≥ 0.25 act; decision mix shifts of more than 5 points; and predicted vs realized default rate by monthly vintage as loans mature (PSI cannot detect concept drift: 2015 applicants looked the same as 2014's but defaulted more).
 
 ## Inference
-`python -m src.predict applicant.json` or `predict(dict)` → pd, decision, decision_basis, model_version, reason_codes (top 4 features by risk above their best bin, in plain words), review triggers, metadata. Invalid input is rejected with a clear message. Latency (600 calls, end to end): p50 [ ] ms, p95 [ ] ms (target < 100 ms).
+`python -m src.predict applicant.json` or `predict(dict)` → pd, decision, decision_basis, model_version, reason_codes (top 4 features by risk above their best bin, in plain words), review triggers, metadata. Invalid input is rejected with a clear message. Latency (600 end-to-end calls on a 2017 laptop, Dell Latitude 5480): **p50 149 ms, p95 221 ms, above the 100 ms target.** Profiling shows no single bottleneck: the time is spread over hundreds of small pandas operations in the per-row transform (cleaning, caps, PCA and factor scores, WoE), each with a fixed cost regardless of row count; the scorecard itself is 14 multiplications, and artifacts load once at start-up (about 1.4 s). Fix: skip the unused PCA/factor step when serving, and build a lean single-row feature path from data_spec.json, proven identical by the parity test.
 
 ## Known limits
 - Trained on accepted loans only: outcomes of declined applicants are unknown (reject inference not done).
