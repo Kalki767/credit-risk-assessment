@@ -66,14 +66,20 @@ Ranking comes first because calibration can be corrected afterwards, while poor 
 - **Latency under 100 ms per application:** measured as p50 / p95 over the full path (validation, transform, model).
 - **Reproducible:** settings in a config file, fixed random seeds, every experiment logged to a CSV. The saved model carries its git commit, training-data hash, training date, contract version and thresholds. Inputs are validated against `data_spec.json` after cleaning (fail fast); a model with a different contract version is refused.
 
-## Production (out of scope; required summary)
-
-Serve `predict.py` behind an API; monitor PSI of inputs and PD plus realized defaults as loans mature; retrain on a refreshed contract when PSI exceeds 0.25 or performance drops.
+## Production (out of scope, in brief)
+- **Serve:** the same `predict()` behind a small internal API or a batch job; the model and transform load once at start-up (p50 latency measured in reports/latency.json); invalid applications are rejected with the validation message.
+- **Monitor:** weekly PSI of the PD and the top inputs (investigate at 0.10, act at 0.25), the decision mix and validation-failure rate, and, most importantly, predicted vs realized default rate per monthly vintage as loans mature.
+- **Retrain:** recalibrate quarterly on matured loans; retrain with `scripts/train.py` when the vintage gap persists or PSI exceeds 0.25; a contract change (new features) gets a new contract_version, and the new model runs as a challenger before replacing the old one.
 
 ## Priorities
 
 Work is ordered by rubric weight: model development, pipeline and lineage, evaluation, then error analysis, inference and tests, model card. The Hugging Face demo comes last and may follow the submission.
 
-## What changed
+## What changed (updated at the end)
 
-*(to be completed at the end)*
+- **WoE re-learned inside each CV fold:** the contract's WoE values used labels from the validation quarters (CV AUC 0.7028 → 0.6975 after the fix).
+- **XGBoost ended at depth 1** (interactions did not help); monotonic constraints improved CV AUC. It still lost the 0.01 rule, so the **scorecard is the production model**, as planned.
+- **Factor scores not used** in the final model (ablation +0.0019, below the 0.002 rule).
+- **Thresholds:** the cut-off is chosen on 2014 out-of-fold PDs and tested on 2015; three bands with an assumed 10% review capacity; review triggers for joint applications and FICO/DTI outside the training range.
+- **Production recalibration (deviation from the planned split):** after the 2015 evaluation was frozen, a 2-parameter recalibration was learned on 2015 outcomes, because PDs ran about 3 points low and the credit team prefers conservative PDs. It is monotone (AUC and reason codes unchanged); its 2015 results are in-sample and reported as a check only.
+- **Demo hosting:** Hugging Face now requires a paid plan for Gradio Spaces on CPU (HTTP 402 when creating the Space). The Space is fully built (`space/`, `scripts/build_space.py`, one-command deploy) and is demoed live from a laptop.
