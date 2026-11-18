@@ -1,4 +1,4 @@
-# Credit risk take-home: PD model on a data contract
+# Credit risk assessment: PD model on a data contract
 
 Part A (data scientist) cleans three messy sources and packages a data contract; Part B (ML engineer) builds, evaluates and serves a probability-of-default model on that contract.
 
